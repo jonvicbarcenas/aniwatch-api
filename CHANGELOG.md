@@ -1,4 +1,13 @@
-# 3.0.0 (2026-01-01)
+# [3.1.0](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.0.0...v3.1.0) (2026-01-02)
+
+
+### Features
+
+* added proxy ([7bd2692](https://github.com/ghoshRitesh12/aniwatch-api/commit/7bd26920e08d184699fc240f07fa708b60f90972))
+
+
+
+# [3.0.0](https://github.com/ghoshRitesh12/aniwatch-api/compare/62efb7b8666d27476a816416f127db7b2162b073...v3.0.0) (2026-01-01)
 
 
 ### Bug Fixes
