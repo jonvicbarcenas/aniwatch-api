@@ -1,3 +1,12 @@
+# [3.3.0](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.2.0...v3.3.0) (2026-01-02)
+
+
+### Features
+
+* idk ([28cecfd](https://github.com/ghoshRitesh12/aniwatch-api/commit/28cecfd05dec6e268055c12d81322a3aeddd94d7))
+
+
+
 # [3.2.0](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.1.0...v3.2.0) (2026-01-02)
 
 
