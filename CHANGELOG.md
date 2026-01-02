@@ -1,3 +1,12 @@
+# [3.4.0](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.3.0...v3.4.0) (2026-01-02)
+
+
+### Features
+
+* add comments API with CRUD operations and likes ([557039d](https://github.com/ghoshRitesh12/aniwatch-api/commit/557039d3aba7fa4c805c99054409950a3034585a))
+
+
+
 # [3.3.0](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.2.0...v3.3.0) (2026-01-02)
 
 
