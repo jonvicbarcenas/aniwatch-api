@@ -62,8 +62,8 @@ proxyRouter.get("/", async (c) => {
                 }
             }
 
-            return c.body(newLines.join("\n"), {
-                status: response.status,
+            return c.body(newLines.join("\n") as any, {
+                status: response.status as any,
                 headers: {
                     "Content-Type": contentType,
                     "Access-Control-Allow-Origin": "*"
@@ -71,8 +71,8 @@ proxyRouter.get("/", async (c) => {
             });
         } else {
             // Stream binary data (TS segments)
-            return c.body(response.body, {
-                status: response.status,
+            return c.body(response.body as any, {
+                status: response.status as any,
                 headers: {
                     "Content-Type": contentType,
                     "Access-Control-Allow-Origin": "*"
