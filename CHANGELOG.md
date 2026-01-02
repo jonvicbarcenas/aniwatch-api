@@ -1,3 +1,12 @@
+# [3.2.0](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.1.0...v3.2.0) (2026-01-02)
+
+
+### Features
+
+* add MongoDB user routes for watchlist and history ([21033c2](https://github.com/ghoshRitesh12/aniwatch-api/commit/21033c21613bc8112b5fca5096197e8a7a2db80d))
+
+
+
 # [3.1.0](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.0.0...v3.1.0) (2026-01-02)
 
 
