@@ -15,6 +15,7 @@ import type { ServerContext } from "./config/context.js";
 import { hianimeRouter } from "./routes/hianime.js";
 import { proxyRouter } from "./routes/proxy.js";
 import { userRouter } from "./routes/user.js";
+import { commentsRouter } from "./routes/comments.js";
 import { logging } from "./middleware/logging.js";
 import { cacheConfigSetter, cacheControl } from "./middleware/cache.js";
 import { connectMongoDB } from "./config/mongodb.js";
@@ -61,6 +62,7 @@ app.use(cacheConfigSetter(BASE_PATH.length));
 app.basePath(BASE_PATH).route("/hianime", hianimeRouter);
 app.basePath(BASE_PATH).route("/proxy", proxyRouter);
 app.basePath(BASE_PATH).route("/user", userRouter);
+app.basePath(BASE_PATH).route("/comments", commentsRouter);
 app.basePath(BASE_PATH).get("/anicrush", (c) =>
     c.text("Anicrush could be implemented in future.")
 );
