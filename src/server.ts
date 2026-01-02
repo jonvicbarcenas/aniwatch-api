@@ -14,8 +14,10 @@ import type { ServerContext } from "./config/context.js";
 
 import { hianimeRouter } from "./routes/hianime.js";
 import { proxyRouter } from "./routes/proxy.js";
+import { userRouter } from "./routes/user.js";
 import { logging } from "./middleware/logging.js";
 import { cacheConfigSetter, cacheControl } from "./middleware/cache.js";
+import { connectMongoDB } from "./config/mongodb.js";
 
 import pkgJson from "../package.json" with { type: "json" };
 
@@ -58,6 +60,7 @@ app.use(cacheConfigSetter(BASE_PATH.length));
 
 app.basePath(BASE_PATH).route("/hianime", hianimeRouter);
 app.basePath(BASE_PATH).route("/proxy", proxyRouter);
+app.basePath(BASE_PATH).route("/user", userRouter);
 app.basePath(BASE_PATH).get("/anicrush", (c) =>
     c.text("Anicrush could be implemented in future.")
 );
@@ -76,6 +79,9 @@ app.onError(errorHandler);
     if (SERVERLESS_ENVIRONMENTS.includes(env.ANIWATCH_API_DEPLOYMENT_ENV)) {
         return;
     }
+
+    // Connect to MongoDB
+    connectMongoDB().catch((err) => log.error(`MongoDB init error: ${err}`));
 
     const server = serve({
         port: env.ANIWATCH_API_PORT,
