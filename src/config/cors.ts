@@ -10,7 +10,7 @@ const allowedOrigins = env.ANIWATCH_API_CORS_ALLOWED_ORIGINS
 const isWildcard = allowedOrigins.includes("*");
 
 export const corsConfig = cors({
-    allowMethods: ["GET"],
+    allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     maxAge: 600,
     credentials: !isWildcard,
     origin: isWildcard ? "*" : allowedOrigins,
