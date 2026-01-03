@@ -1,3 +1,12 @@
+# [3.5.0](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.4.2...v3.5.0) (2026-01-03)
+
+
+### Features
+
+* add random anime endpoint ([143f6bb](https://github.com/ghoshRitesh12/aniwatch-api/commit/143f6bb6cbf9560952f7dbd0c195eddfe35559ea))
+
+
+
 ## [3.4.2](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.4.1...v3.4.2) (2026-01-03)
 
 
@@ -26,15 +35,6 @@
 ### Features
 
 * idk ([28cecfd](https://github.com/ghoshRitesh12/aniwatch-api/commit/28cecfd05dec6e268055c12d81322a3aeddd94d7))
-
-
-
-# [3.2.0](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.1.0...v3.2.0) (2026-01-02)
-
-
-### Features
-
-* add MongoDB user routes for watchlist and history ([21033c2](https://github.com/ghoshRitesh12/aniwatch-api/commit/21033c21613bc8112b5fca5096197e8a7a2db80d))
 
 
 
