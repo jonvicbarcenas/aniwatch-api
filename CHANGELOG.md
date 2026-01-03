@@ -1,3 +1,12 @@
+## [3.4.2](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.4.1...v3.4.2) (2026-01-03)
+
+
+### Bug Fixes
+
+* update watchlist to support upsert and add ownership verification for comments ([0bbe24d](https://github.com/ghoshRitesh12/aniwatch-api/commit/0bbe24d260b90afcebc1c9ec569842259c17a584))
+
+
+
 ## [3.4.1](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.4.0...v3.4.1) (2026-01-02)
 
 
@@ -26,15 +35,6 @@
 ### Features
 
 * add MongoDB user routes for watchlist and history ([21033c2](https://github.com/ghoshRitesh12/aniwatch-api/commit/21033c21613bc8112b5fca5096197e8a7a2db80d))
-
-
-
-# [3.1.0](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.0.0...v3.1.0) (2026-01-02)
-
-
-### Features
-
-* added proxy ([7bd2692](https://github.com/ghoshRitesh12/aniwatch-api/commit/7bd26920e08d184699fc240f07fa708b60f90972))
 
 
 
