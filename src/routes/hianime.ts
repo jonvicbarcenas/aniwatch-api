@@ -237,4 +237,21 @@ hianimeRouter.get("/anime/:animeId/next-episode-schedule", async (c) => {
     return c.json({ status: 200, data }, { status: 200 });
 });
 
+// /api/v2/hianime/random
+hianimeRouter.get("/random", async (c) => {
+    const categories: HiAnime.AnimeCategories[] = ["top-airing", "most-popular", "most-favorite", "completed"];
+    const randomCategory = categories[Math.floor(Math.random() * categories.length)];
+    
+    try {
+        const data = await hianime.getCategoryAnime(randomCategory, 1);
+        if (data.animes && data.animes.length > 0) {
+            const randomAnime = data.animes[Math.floor(Math.random() * data.animes.length)];
+            return c.json({ status: 200, data: randomAnime });
+        }
+        return c.json({ status: 404, error: "No anime found" }, 404);
+    } catch (error) {
+        return c.json({ status: 500, error: "Internal server error" }, 500);
+    }
+});
+
 export { hianimeRouter };
