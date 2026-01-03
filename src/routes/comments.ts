@@ -117,10 +117,10 @@ commentsRouter.post("/", async (c) => {
 commentsRouter.put("/:commentId", async (c) => {
     const { commentId } = c.req.param();
     const body = await c.req.json();
-    const { content } = body;
+    const { content, userId } = body;
 
-    if (!content) {
-        return c.json({ success: false, error: "Content is required" }, 400);
+    if (!content || !userId) {
+        return c.json({ success: false, error: "Content and userId are required" }, 400);
     }
 
     if (content.length > 500) {
@@ -128,6 +128,16 @@ commentsRouter.put("/:commentId", async (c) => {
     }
 
     const db = await getDB();
+    const comment = await db.collection("comments").findOne({ _id: new ObjectId(commentId) });
+
+    if (!comment) {
+        return c.json({ success: false, error: "Comment not found" }, 404);
+    }
+
+    if (comment.userId !== userId) {
+        return c.json({ success: false, error: "Unauthorized" }, 403);
+    }
+
     await db.collection("comments").updateOne(
         { _id: new ObjectId(commentId) },
         { $set: { content, isEdited: true, updatedAt: Date.now() } }
@@ -139,7 +149,23 @@ commentsRouter.put("/:commentId", async (c) => {
 // Delete a comment
 commentsRouter.delete("/:commentId", async (c) => {
     const { commentId } = c.req.param();
+    const body = await c.req.json().catch(() => ({}));
+    const { userId } = body;
+
+    if (!userId) {
+        return c.json({ success: false, error: "userId is required" }, 400);
+    }
+
     const db = await getDB();
+    const comment = await db.collection("comments").findOne({ _id: new ObjectId(commentId) });
+
+    if (!comment) {
+        return c.json({ success: false, error: "Comment not found" }, 404);
+    }
+
+    if (comment.userId !== userId) {
+        return c.json({ success: false, error: "Unauthorized" }, 403);
+    }
 
     // Delete the comment and all its replies
     await db.collection("comments").deleteMany({

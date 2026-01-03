@@ -38,19 +38,22 @@ userRouter.get("/watchlist/:uid", async (c) => {
     return c.json({ success: true, data: items });
 });
 
-// Add to watchlist
+// Add/Update watchlist item
 userRouter.post("/watchlist", async (c) => {
     const body = await c.req.json();
-    const { uid, ...itemData } = body;
+    const { uid, animeId, ...itemData } = body;
     if (!uid) return c.json({ success: false, error: "uid required" }, 400);
 
     const db = await getDB();
-    const result = await db.collection("watchlist").insertOne({
-        ...itemData,
-        uid,
-        addedAt: Date.now(),
-    });
-    return c.json({ success: true, data: { id: result.insertedId } });
+    await db.collection("watchlist").updateOne(
+        { uid, animeId },
+        { 
+            $set: { ...itemData, uid, animeId, updatedAt: Date.now() },
+            $setOnInsert: { addedAt: Date.now() }
+        },
+        { upsert: true }
+    );
+    return c.json({ success: true });
 });
 
 // Remove from watchlist
