@@ -1,3 +1,12 @@
+# [3.7.0](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.6.0...v3.7.0) (2026-01-04)
+
+
+### Features
+
+* add settings endpoint for admin-controlled feature flags ([8540d4d](https://github.com/ghoshRitesh12/aniwatch-api/commit/8540d4da26cdaad8284079801612d1dcec9bff3b))
+
+
+
 # [3.6.0](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.5.0...v3.6.0) (2026-01-03)
 
 
@@ -26,15 +35,6 @@
 
 
 ## [3.4.1](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.4.0...v3.4.1) (2026-01-02)
-
-
-
-# [3.4.0](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.3.0...v3.4.0) (2026-01-02)
-
-
-### Features
-
-* add comments API with CRUD operations and likes ([557039d](https://github.com/ghoshRitesh12/aniwatch-api/commit/557039d3aba7fa4c805c99054409950a3034585a))
 
 
 
