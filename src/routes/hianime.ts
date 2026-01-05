@@ -1,4 +1,10 @@
 import { Hono } from "hono";
+import { getDB } from "../config/mongodb.js";
+import {
+    ensureEpisodeSourcesCacheIndexes,
+    getCachedEpisodeSources,
+    setCachedEpisodeSources,
+} from "../helpers/sourceCache.js";
 import { HiAnime } from "aniwatch";
 import { cache } from "../config/cache.js";
 import type { ServerContext } from "../config/context.js";
@@ -189,9 +195,7 @@ hianimeRouter.get("/episode/servers", async (c) => {
 // /api/v2/hianime/episode/sources?animeEpisodeId={episodeId}?server={server}&category={category (dub or sub)}
 hianimeRouter.get("/episode/sources", async (c) => {
     const cacheConfig = c.get("CACHE_CONFIG");
-    const animeEpisodeId = decodeURIComponent(
-        c.req.query("animeEpisodeId") || ""
-    );
+    const animeEpisodeId = decodeURIComponent(c.req.query("animeEpisodeId") || "");
     const server = decodeURIComponent(
         c.req.query("server") || HiAnime.Servers.VidStreaming
     ) as HiAnime.AnimeServers;
@@ -200,11 +204,43 @@ hianimeRouter.get("/episode/sources", async (c) => {
         | "dub"
         | "raw";
 
+    const refresh = c.req.query("refresh") === "1";
+
+    // 1) Try MongoDB cache first (unless forced refresh)
+    if (!refresh) {
+        try {
+            const db = await getDB();
+            const cached = await getCachedEpisodeSources<HiAnime.ScrapedAnimeEpisodesSources>(
+                db,
+                animeEpisodeId,
+                server,
+                category
+            );
+            if (cached) {
+                return c.json({ status: 200, data: cached }, { status: 200 });
+            }
+        } catch {
+            // If DB is unavailable, fall back to in-memory cache/upstream.
+        }
+    }
+
+    // 2) Fallback to existing cache layer + upstream fetch
     const data = await cache.getOrSet<HiAnime.ScrapedAnimeEpisodesSources>(
         async () => hianime.getEpisodeSources(animeEpisodeId, server, category),
         cacheConfig.key,
         cacheConfig.duration
     );
+
+    // 3) Store only on successful fetch (non-empty sources)
+    try {
+        if (data && Array.isArray((data as any).sources) && (data as any).sources.length > 0) {
+            const db = await getDB();
+            await ensureEpisodeSourcesCacheIndexes(db);
+            await setCachedEpisodeSources(db, animeEpisodeId, server, category, data);
+        }
+    } catch {
+        // ignore DB write failures
+    }
 
     return c.json({ status: 200, data }, { status: 200 });
 });
