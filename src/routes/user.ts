@@ -97,3 +97,15 @@ userRouter.delete("/history/:uid", async (c) => {
     await db.collection("watchHistory").deleteMany({ uid });
     return c.json({ success: true });
 });
+
+// Remove specific history item
+userRouter.delete("/history/:uid/:animeId/:episodeNum", async (c) => {
+    const { uid, animeId, episodeNum } = c.req.param();
+    const db = await getDB();
+    await db.collection("watchHistory").deleteOne({ 
+        uid, 
+        animeId, 
+        episodeNum: parseInt(episodeNum) 
+    });
+    return c.json({ success: true });
+});
