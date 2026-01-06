@@ -1,3 +1,12 @@
+# [3.10.0](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.9.0...v3.10.0) (2026-01-06)
+
+
+### Features
+
+* enhance streaming proxy with caching ([39f07a8](https://github.com/ghoshRitesh12/aniwatch-api/commit/39f07a8ca3660c7ec1eea47e9732ce008ab3ba5b))
+
+
+
 # [3.9.0](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.8.0...v3.9.0) (2026-01-05)
 
 
@@ -31,15 +40,6 @@
 ### Features
 
 * add chat route and server updates ([a630ea5](https://github.com/ghoshRitesh12/aniwatch-api/commit/a630ea58e2b040d521d9dba065f4474a94fd969a))
-
-
-
-# [3.5.0](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.4.2...v3.5.0) (2026-01-03)
-
-
-### Features
-
-* add random anime endpoint ([143f6bb](https://github.com/ghoshRitesh12/aniwatch-api/commit/143f6bb6cbf9560952f7dbd0c195eddfe35559ea))
 
 
 
