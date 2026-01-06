@@ -4,7 +4,7 @@ import type { ServerContext } from "../config/context.js";
 
 export const userRouter = new Hono<ServerContext>();
 
-// Get user profile
+// Get user profile by uid
 userRouter.get("/profile/:uid", async (c) => {
     const { uid } = c.req.param();
     const db = await getDB();
@@ -12,16 +12,50 @@ userRouter.get("/profile/:uid", async (c) => {
     return c.json({ success: true, data: profile });
 });
 
-// Create/Update user profile
+// Get user profile by username (case-insensitive)
+userRouter.get("/profile/by-username/:username", async (c) => {
+    const { username } = c.req.param();
+    const uname = String(username).trim();
+    const escaped = uname.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const regex = new RegExp(`^${escaped}$`, "i");
+    const db = await getDB();
+    const profile = await db.collection("users").findOne({ username: { $regex: regex } });
+    return c.json({ success: true, data: profile });
+});
+
+// Create/Update user profile with username uniqueness enforcement (case-insensitive)
 userRouter.post("/profile", async (c) => {
     const body = await c.req.json();
-    const { uid, ...profileData } = body;
+    const { uid, username, ...profileData } = body;
     if (!uid) return c.json({ success: false, error: "uid required" }, 400);
 
     const db = await getDB();
+
+    let finalUsername: string | undefined = undefined;
+    if (typeof username === "string" && username.trim()) {
+        const uname = username.trim();
+        const escaped = uname.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const regex = new RegExp(`^${escaped}$`, "i");
+        const existing = await db
+            .collection("users")
+            .findOne({ username: { $regex: regex }, uid: { $ne: uid } });
+        if (existing) {
+            return c.json({ success: false, error: "username-taken" }, 409);
+        }
+        // Normalize to lowercase when storing
+        finalUsername = uname.toLowerCase();
+    }
+
     await db.collection("users").updateOne(
         { uid },
-        { $set: { ...profileData, uid, updatedAt: Date.now() } },
+        {
+            $set: {
+                ...profileData,
+                uid,
+                ...(finalUsername ? { username: finalUsername } : {}),
+                updatedAt: Date.now(),
+            },
+        },
         { upsert: true }
     );
     return c.json({ success: true });
