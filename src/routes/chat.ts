@@ -13,6 +13,43 @@ chatRouter.use("*", async (c, next) => {
 });
 
 /**
+ * Chat read receipts and unread count
+ */
+// Mark messages as seen up to a timestamp
+chatRouter.post("/messages/seen", async (c) => {
+    const body = await c.req.json().catch(() => ({}));
+    const { userId, username, upToCreatedAt } = body as { userId?: string; username?: string; upToCreatedAt?: number };
+    if (!userId || !username || !Number.isFinite(upToCreatedAt)) {
+        return c.json({ success: false, error: "Missing required fields" }, 400);
+    }
+
+    const db = await getDB();
+    await db.collection("chatMessages").updateMany(
+        { createdAt: { $lte: upToCreatedAt! } },
+        {
+            $addToSet: { seenBy: { userId, username } },
+        }
+    );
+
+    return c.json({ success: true });
+});
+
+// Unread count for a user
+chatRouter.get("/unread-count", async (c) => {
+    const userId = c.req.query("userId");
+    if (!userId) return c.json({ success: false, error: "userId required" }, 400);
+    const db = await getDB();
+    const count = await db.collection("chatMessages").countDocuments({
+        $or: [
+            { seenBy: { $exists: false } },
+            { seenBy: { $size: 0 } },
+            { seenBy: { $not: { $elemMatch: { userId } } } },
+        ],
+    });
+    return c.json({ success: true, data: { count } });
+});
+
+/**
  * Global chat messages.
  *
  * GET /messages?limit=50&after=<ms>&before=<ms>
