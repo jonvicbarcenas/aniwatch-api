@@ -1,3 +1,7 @@
+## [3.11.1](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.11.0...v3.11.1) (2026-01-06)
+
+
+
 # [3.11.0](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.10.0...v3.11.0) (2026-01-06)
 
 
@@ -31,15 +35,6 @@
 ### Features
 
 * cache episode sources and auto-refresh on playback failure ([f38be75](https://github.com/ghoshRitesh12/aniwatch-api/commit/f38be75e02e8aefe0a0087fc78e437c540a430b8))
-
-
-
-# [3.7.0](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.6.0...v3.7.0) (2026-01-04)
-
-
-### Features
-
-* add settings endpoint for admin-controlled feature flags ([8540d4d](https://github.com/ghoshRitesh12/aniwatch-api/commit/8540d4da26cdaad8284079801612d1dcec9bff3b))
 
 
 
