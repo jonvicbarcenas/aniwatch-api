@@ -1,3 +1,12 @@
+# [3.11.0](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.10.0...v3.11.0) (2026-01-06)
+
+
+### Features
+
+* **auth:** add username lookup and enforce unique usernames (case-insensitive) ([6569224](https://github.com/ghoshRitesh12/aniwatch-api/commit/656922420f0bbc34134c33f5d96f0d9912eac911))
+
+
+
 # [3.10.0](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.9.0...v3.10.0) (2026-01-06)
 
 
@@ -31,15 +40,6 @@
 ### Features
 
 * add settings endpoint for admin-controlled feature flags ([8540d4d](https://github.com/ghoshRitesh12/aniwatch-api/commit/8540d4da26cdaad8284079801612d1dcec9bff3b))
-
-
-
-# [3.6.0](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.5.0...v3.6.0) (2026-01-03)
-
-
-### Features
-
-* add chat route and server updates ([a630ea5](https://github.com/ghoshRitesh12/aniwatch-api/commit/a630ea58e2b040d521d9dba065f4474a94fd969a))
 
 
 
