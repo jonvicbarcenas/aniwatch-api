@@ -91,10 +91,11 @@ app.onError(errorHandler);
 
     const server = serve({
         port: env.ANIWATCH_API_PORT,
+        hostname: "0.0.0.0",
         fetch: app.fetch,
     }).addListener("listening", () =>
         log.info(
-            `aniwatch-api RUNNING at http://localhost:${env.ANIWATCH_API_PORT}`
+            `aniwatch-api RUNNING at http://0.0.0.0:${env.ANIWATCH_API_PORT}`
         )
     );
 
