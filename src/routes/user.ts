@@ -143,3 +143,95 @@ userRouter.delete("/history/:uid/:animeId/:episodeNum", async (c) => {
     });
     return c.json({ success: true });
 });
+
+/**
+ * Admin: get most recent watchers across all users.
+ * 
+ * GET /admin/recent-watchers?uid=<adminUid>&limit=25&activeWithinMinutes=5
+ * - Returns latest watch item per user (deduplicated by uid)
+ * - Auth model matches settings route (trusts provided uid; production should verify Firebase token)
+ */
+userRouter.get("/admin/recent-watchers", async (c) => {
+    const uid = c.req.query("uid");
+    if (!uid) return c.json({ success: false, error: "uid required" }, 400);
+
+    const limitRaw = c.req.query("limit");
+    const activeWithinRaw = c.req.query("activeWithinMinutes");
+
+    const limit = Math.min(Math.max(Number(limitRaw ?? 25) || 25, 1), 200);
+    const activeWithinMinutes = activeWithinRaw ? Number(activeWithinRaw) : undefined;
+    const activeSince = Number.isFinite(activeWithinMinutes)
+        ? Date.now() - Math.max(activeWithinMinutes!, 0) * 60_000
+        : undefined;
+
+    const db = await getDB();
+
+    // Authorization: only admins can read this.
+    const user = await db.collection("users").findOne({ uid });
+    if (!user || user.isAdmin !== true) {
+        return c.json({ success: false, error: "Unauthorized" }, 403);
+    }
+
+    const matchStage: Record<string, unknown> = {};
+    if (Number.isFinite(activeSince)) {
+        matchStage.watchedAt = { $gte: activeSince };
+    }
+
+    // watchHistory stores items keyed by (uid, animeId, episodeNum) with watchedAt updates.
+    // We want the most recent row per uid.
+    const pipeline: any[] = [];
+    if (Object.keys(matchStage).length > 0) pipeline.push({ $match: matchStage });
+
+    pipeline.push(
+        { $sort: { watchedAt: -1 } },
+        {
+            $group: {
+                _id: "$uid",
+                uid: { $first: "$uid" },
+                animeId: { $first: "$animeId" },
+                name: { $first: "$name" },
+                image: { $first: "$image" },
+                type: { $first: "$type" },
+                episodeNum: { $first: "$episodeNum" },
+                episodeId: { $first: "$episodeId" },
+                watchedAt: { $first: "$watchedAt" },
+                timeWatched: { $first: "$timeWatched" },
+                duration: { $first: "$duration" },
+            },
+        },
+        {
+            $lookup: {
+                from: "users",
+                localField: "uid",
+                foreignField: "uid",
+                as: "user",
+            },
+        },
+        {
+            $addFields: {
+                username: { $ifNull: [{ $arrayElemAt: ["$user.username", 0] }, "unknown"] },
+            },
+        },
+        {
+            $project: {
+                _id: 0,
+                uid: 1,
+                username: 1,
+                animeId: 1,
+                name: 1,
+                image: 1,
+                type: 1,
+                episodeNum: 1,
+                episodeId: 1,
+                watchedAt: 1,
+                timeWatched: 1,
+                duration: 1,
+            },
+        },
+        { $sort: { watchedAt: -1 } },
+        { $limit: limit }
+    );
+
+    const items = await db.collection("watchHistory").aggregate(pipeline).toArray();
+    return c.json({ success: true, data: items });
+});
