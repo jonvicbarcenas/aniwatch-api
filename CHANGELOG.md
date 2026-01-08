@@ -1,3 +1,12 @@
+# [3.12.0](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.11.1...v3.12.0) (2026-01-08)
+
+
+### Features
+
+* **admin:** add endpoint to retrieve recent watchers across all users ([a7d43aa](https://github.com/ghoshRitesh12/aniwatch-api/commit/a7d43aafb2bc4bfd3b58e916fdb4f690edc373a5))
+
+
+
 ## [3.11.1](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.11.0...v3.11.1) (2026-01-06)
 
 
@@ -26,15 +35,6 @@
 ### Features
 
 * add endpoint for individual history deletion ([2b62c48](https://github.com/ghoshRitesh12/aniwatch-api/commit/2b62c486565092a3f5b7f69d38491f23078ff002))
-
-
-
-# [3.8.0](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.7.0...v3.8.0) (2026-01-05)
-
-
-### Features
-
-* cache episode sources and auto-refresh on playback failure ([f38be75](https://github.com/ghoshRitesh12/aniwatch-api/commit/f38be75e02e8aefe0a0087fc78e437c540a430b8))
 
 
 
