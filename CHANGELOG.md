@@ -1,3 +1,12 @@
+# [3.13.0](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.12.0...v3.13.0) (2026-01-20)
+
+
+### Features
+
+* add announcements API routes ([3b123c5](https://github.com/ghoshRitesh12/aniwatch-api/commit/3b123c5bf27f2d0f1924723741e10ec7583c9b57))
+
+
+
 # [3.12.0](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.11.1...v3.12.0) (2026-01-08)
 
 
@@ -26,15 +35,6 @@
 ### Features
 
 * enhance streaming proxy with caching ([39f07a8](https://github.com/ghoshRitesh12/aniwatch-api/commit/39f07a8ca3660c7ec1eea47e9732ce008ab3ba5b))
-
-
-
-# [3.9.0](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.8.0...v3.9.0) (2026-01-05)
-
-
-### Features
-
-* add endpoint for individual history deletion ([2b62c48](https://github.com/ghoshRitesh12/aniwatch-api/commit/2b62c486565092a3f5b7f69d38491f23078ff002))
 
 
 
