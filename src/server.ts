@@ -18,6 +18,7 @@ import { userRouter } from "./routes/user.js";
 import { commentsRouter } from "./routes/comments.js";
 import { chatRouter } from "./routes/chat.js";
 import { settingsRouter } from "./routes/settings.js";
+import { announcementsRouter } from "./routes/announcements.js";
 import { logging } from "./middleware/logging.js";
 import { cacheConfigSetter, cacheControl } from "./middleware/cache.js";
 import { connectMongoDB } from "./config/mongodb.js";
@@ -67,6 +68,7 @@ app.basePath(BASE_PATH).route("/user", userRouter);
 app.basePath(BASE_PATH).route("/comments", commentsRouter);
 app.basePath(BASE_PATH).route("/chat", chatRouter);
 app.basePath(BASE_PATH).route("/settings", settingsRouter);
+app.basePath(BASE_PATH).route("/announcements", announcementsRouter);
 app.basePath(BASE_PATH).get("/anicrush", (c) =>
     c.text("Anicrush could be implemented in future.")
 );
