@@ -1,10 +1,12 @@
 import { Hono } from "hono";
 import { getDB } from "../config/mongodb.js";
 import type { ServerContext } from "../config/context.js";
+import { authMiddleware, adminMiddleware, getVerifiedUid } from "../middleware/auth.js";
+import { isFirebaseConfigured } from "../config/firebase.js";
 
 export const userRouter = new Hono<ServerContext>();
 
-// Get user profile by uid
+// Get user profile by uid (public - needed for login flow)
 userRouter.get("/profile/:uid", async (c) => {
     const { uid } = c.req.param();
     const db = await getDB();
@@ -12,7 +14,7 @@ userRouter.get("/profile/:uid", async (c) => {
     return c.json({ success: true, data: profile });
 });
 
-// Get user profile by username (case-insensitive)
+// Get user profile by username (case-insensitive) - public for login
 userRouter.get("/profile/by-username/:username", async (c) => {
     const { username } = c.req.param();
     const uname = String(username).trim();
@@ -24,10 +26,21 @@ userRouter.get("/profile/by-username/:username", async (c) => {
 });
 
 // Create/Update user profile with username uniqueness enforcement (case-insensitive)
-userRouter.post("/profile", async (c) => {
-    const body = await c.req.json();
-    const { uid, username, ...profileData } = body;
+// Protected: Users can only update their own profile
+userRouter.post("/profile", authMiddleware, async (c) => {
+    const body = c.get("parsedBody") || await c.req.json();
+    const { uid: bodyUid, username, ...profileData } = body;
+    
+    // Use verified uid from token if available, otherwise fall back to body uid
+    const verifiedUid = getVerifiedUid(c);
+    const uid = verifiedUid || bodyUid;
+    
     if (!uid) return c.json({ success: false, error: "uid required" }, 400);
+    
+    // Security: If Firebase is configured, ensure user can only update their own profile
+    if (isFirebaseConfigured() && verifiedUid && bodyUid && verifiedUid !== bodyUid) {
+        return c.json({ success: false, error: "Cannot update another user's profile" }, 403);
+    }
 
     const db = await getDB();
 
@@ -46,6 +59,12 @@ userRouter.post("/profile", async (c) => {
         finalUsername = uname.toLowerCase();
     }
 
+    // Prevent non-admins from setting isAdmin flag
+    const isCurrentlyAdmin = c.get("isAdmin");
+    if (profileData.isAdmin !== undefined && !isCurrentlyAdmin) {
+        delete profileData.isAdmin;
+    }
+
     await db.collection("users").updateOne(
         { uid },
         {
@@ -61,9 +80,17 @@ userRouter.post("/profile", async (c) => {
     return c.json({ success: true });
 });
 
-// Get watchlist
-userRouter.get("/watchlist/:uid", async (c) => {
-    const { uid } = c.req.param();
+// Get watchlist - Protected: Users can only access their own watchlist
+userRouter.get("/watchlist/:uid", authMiddleware, async (c) => {
+    const { uid: paramUid } = c.req.param();
+    const verifiedUid = getVerifiedUid(c);
+    
+    // Security: Users can only access their own watchlist
+    if (isFirebaseConfigured() && verifiedUid && verifiedUid !== paramUid) {
+        return c.json({ success: false, error: "Cannot access another user's watchlist" }, 403);
+    }
+    
+    const uid = verifiedUid || paramUid;
     const db = await getDB();
     const items = await db.collection("watchlist")
         .find({ uid })
@@ -72,11 +99,20 @@ userRouter.get("/watchlist/:uid", async (c) => {
     return c.json({ success: true, data: items });
 });
 
-// Add/Update watchlist item
-userRouter.post("/watchlist", async (c) => {
-    const body = await c.req.json();
-    const { uid, animeId, ...itemData } = body;
+// Add/Update watchlist item - Protected
+userRouter.post("/watchlist", authMiddleware, async (c) => {
+    const body = c.get("parsedBody") || await c.req.json();
+    const { uid: bodyUid, animeId, ...itemData } = body;
+    
+    const verifiedUid = getVerifiedUid(c);
+    const uid = verifiedUid || bodyUid;
+    
     if (!uid) return c.json({ success: false, error: "uid required" }, 400);
+    
+    // Security: Users can only modify their own watchlist
+    if (isFirebaseConfigured() && verifiedUid && bodyUid && verifiedUid !== bodyUid) {
+        return c.json({ success: false, error: "Cannot modify another user's watchlist" }, 403);
+    }
 
     const db = await getDB();
     await db.collection("watchlist").updateOne(
@@ -90,17 +126,33 @@ userRouter.post("/watchlist", async (c) => {
     return c.json({ success: true });
 });
 
-// Remove from watchlist
-userRouter.delete("/watchlist/:uid/:animeId", async (c) => {
-    const { uid, animeId } = c.req.param();
+// Remove from watchlist - Protected
+userRouter.delete("/watchlist/:uid/:animeId", authMiddleware, async (c) => {
+    const { uid: paramUid, animeId } = c.req.param();
+    const verifiedUid = getVerifiedUid(c);
+    
+    // Security: Users can only delete from their own watchlist
+    if (isFirebaseConfigured() && verifiedUid && verifiedUid !== paramUid) {
+        return c.json({ success: false, error: "Cannot modify another user's watchlist" }, 403);
+    }
+    
+    const uid = verifiedUid || paramUid;
     const db = await getDB();
     await db.collection("watchlist").deleteOne({ uid, animeId });
     return c.json({ success: true });
 });
 
-// Get watch history
-userRouter.get("/history/:uid", async (c) => {
-    const { uid } = c.req.param();
+// Get watch history - Protected
+userRouter.get("/history/:uid", authMiddleware, async (c) => {
+    const { uid: paramUid } = c.req.param();
+    const verifiedUid = getVerifiedUid(c);
+    
+    // Security: Users can only access their own history
+    if (isFirebaseConfigured() && verifiedUid && verifiedUid !== paramUid) {
+        return c.json({ success: false, error: "Cannot access another user's history" }, 403);
+    }
+    
+    const uid = verifiedUid || paramUid;
     const db = await getDB();
     const items = await db.collection("watchHistory")
         .find({ uid })
@@ -109,11 +161,20 @@ userRouter.get("/history/:uid", async (c) => {
     return c.json({ success: true, data: items });
 });
 
-// Add/Update watch history
-userRouter.post("/history", async (c) => {
-    const body = await c.req.json();
-    const { uid, animeId, episodeNum, ...itemData } = body;
+// Add/Update watch history - Protected
+userRouter.post("/history", authMiddleware, async (c) => {
+    const body = c.get("parsedBody") || await c.req.json();
+    const { uid: bodyUid, animeId, episodeNum, ...itemData } = body;
+    
+    const verifiedUid = getVerifiedUid(c);
+    const uid = verifiedUid || bodyUid;
+    
     if (!uid) return c.json({ success: false, error: "uid required" }, 400);
+    
+    // Security: Users can only modify their own history
+    if (isFirebaseConfigured() && verifiedUid && bodyUid && verifiedUid !== bodyUid) {
+        return c.json({ success: false, error: "Cannot modify another user's history" }, 403);
+    }
 
     const db = await getDB();
     await db.collection("watchHistory").updateOne(
@@ -124,17 +185,33 @@ userRouter.post("/history", async (c) => {
     return c.json({ success: true });
 });
 
-// Clear watch history
-userRouter.delete("/history/:uid", async (c) => {
-    const { uid } = c.req.param();
+// Clear watch history - Protected
+userRouter.delete("/history/:uid", authMiddleware, async (c) => {
+    const { uid: paramUid } = c.req.param();
+    const verifiedUid = getVerifiedUid(c);
+    
+    // Security: Users can only clear their own history
+    if (isFirebaseConfigured() && verifiedUid && verifiedUid !== paramUid) {
+        return c.json({ success: false, error: "Cannot clear another user's history" }, 403);
+    }
+    
+    const uid = verifiedUid || paramUid;
     const db = await getDB();
     await db.collection("watchHistory").deleteMany({ uid });
     return c.json({ success: true });
 });
 
-// Remove specific history item
-userRouter.delete("/history/:uid/:animeId/:episodeNum", async (c) => {
-    const { uid, animeId, episodeNum } = c.req.param();
+// Remove specific history item - Protected
+userRouter.delete("/history/:uid/:animeId/:episodeNum", authMiddleware, async (c) => {
+    const { uid: paramUid, animeId, episodeNum } = c.req.param();
+    const verifiedUid = getVerifiedUid(c);
+    
+    // Security: Users can only delete their own history items
+    if (isFirebaseConfigured() && verifiedUid && verifiedUid !== paramUid) {
+        return c.json({ success: false, error: "Cannot modify another user's history" }, 403);
+    }
+    
+    const uid = verifiedUid || paramUid;
     const db = await getDB();
     await db.collection("watchHistory").deleteOne({ 
         uid, 
@@ -147,14 +224,11 @@ userRouter.delete("/history/:uid/:animeId/:episodeNum", async (c) => {
 /**
  * Admin: get most recent watchers across all users.
  * 
- * GET /admin/recent-watchers?uid=<adminUid>&limit=25&activeWithinMinutes=5
+ * GET /admin/recent-watchers?limit=25&activeWithinMinutes=5
  * - Returns latest watch item per user (deduplicated by uid)
- * - Auth model matches settings route (trusts provided uid; production should verify Firebase token)
+ * - Protected: Requires admin authentication via Firebase token
  */
-userRouter.get("/admin/recent-watchers", async (c) => {
-    const uid = c.req.query("uid");
-    if (!uid) return c.json({ success: false, error: "uid required" }, 400);
-
+userRouter.get("/admin/recent-watchers", adminMiddleware, async (c) => {
     const limitRaw = c.req.query("limit");
     const activeWithinRaw = c.req.query("activeWithinMinutes");
 
@@ -165,12 +239,7 @@ userRouter.get("/admin/recent-watchers", async (c) => {
         : undefined;
 
     const db = await getDB();
-
-    // Authorization: only admins can read this.
-    const user = await db.collection("users").findOne({ uid });
-    if (!user || user.isAdmin !== true) {
-        return c.json({ success: false, error: "Unauthorized" }, 403);
-    }
+    // Admin check is already done by adminMiddleware
 
     const matchStage: Record<string, unknown> = {};
     if (Number.isFinite(activeSince)) {

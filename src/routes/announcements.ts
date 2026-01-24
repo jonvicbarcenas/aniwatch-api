@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { ObjectId } from "mongodb";
 import type { ServerContext } from "../config/context.js";
 import { getDB } from "../config/mongodb.js";
+import { adminMiddleware, getVerifiedUid } from "../middleware/auth.js";
 
 export type AnnouncementPriority = 'low' | 'medium' | 'high' | 'critical';
 export type AnnouncementType = 'info' | 'warning' | 'maintenance' | 'update' | 'event';
@@ -36,12 +37,6 @@ announcementsRouter.use("*", async (c, next) => {
   c.header("Pragma", "no-cache");
   c.header("Expires", "0");
 });
-
-// Helper to check if user is admin
-async function isAdmin(db: any, uid: string): Promise<boolean> {
-  const user = await db.collection("users").findOne({ uid });
-  return user?.isAdmin === true;
-}
 
 // GET / - Get all active announcements for users (public)
 announcementsRouter.get("/", async (c) => {
@@ -94,20 +89,11 @@ announcementsRouter.get("/", async (c) => {
   }
 });
 
-// GET /admin - Get all announcements for admin (requires auth)
-announcementsRouter.get("/admin", async (c) => {
-  const uid = c.req.query("uid");
-
-  if (!uid) {
-    return c.json({ success: false, error: "uid is required" }, 400);
-  }
-
+// GET /admin - Get all announcements for admin (protected by adminMiddleware)
+announcementsRouter.get("/admin", adminMiddleware, async (c) => {
   try {
     const db = await getDB();
-
-    if (!(await isAdmin(db, uid))) {
-      return c.json({ success: false, error: "Unauthorized" }, 403);
-    }
+    // Admin check is already done by adminMiddleware
 
     const announcements = await db
       .collection(COLLECTION)
@@ -122,12 +108,11 @@ announcementsRouter.get("/admin", async (c) => {
   }
 });
 
-// POST / - Create new announcement (admin only)
-announcementsRouter.post("/", async (c) => {
-  const body = await c.req.json().catch(() => ({}));
+// POST / - Create new announcement (protected by adminMiddleware)
+announcementsRouter.post("/", adminMiddleware, async (c) => {
+  const body = c.get("parsedBody") || await c.req.json().catch(() => ({}));
 
-  const { uid, subject, content, priority, type, isActive, isPinned, showOnce, startsAt, expiresAt } = body as {
-    uid?: string;
+  const { subject, content, priority, type, isActive, isPinned, showOnce, startsAt, expiresAt } = body as {
     subject?: string;
     content?: string;
     priority?: AnnouncementPriority;
@@ -139,9 +124,8 @@ announcementsRouter.post("/", async (c) => {
     expiresAt?: number;
   };
 
-  if (!uid) {
-    return c.json({ success: false, error: "uid is required" }, 400);
-  }
+  // Get verified uid from middleware
+  const uid = getVerifiedUid(c);
 
   if (!subject || !content) {
     return c.json({ success: false, error: "subject and content are required" }, 400);
@@ -160,11 +144,9 @@ announcementsRouter.post("/", async (c) => {
 
   try {
     const db = await getDB();
+    // Admin check is already done by adminMiddleware
 
     const user = await db.collection("users").findOne({ uid });
-    if (!user || user.isAdmin !== true) {
-      return c.json({ success: false, error: "Unauthorized" }, 403);
-    }
 
     const now = Date.now();
     const announcement: Announcement = {
@@ -180,8 +162,8 @@ announcementsRouter.post("/", async (c) => {
       createdAt: now,
       updatedAt: now,
       createdBy: {
-        uid: user.uid,
-        username: user.username || 'Admin',
+        uid: uid || 'unknown',
+        username: user?.username || 'Admin',
       },
     };
 
@@ -197,13 +179,12 @@ announcementsRouter.post("/", async (c) => {
   }
 });
 
-// PUT /:id - Update announcement (admin only)
-announcementsRouter.put("/:id", async (c) => {
+// PUT /:id - Update announcement (protected by adminMiddleware)
+announcementsRouter.put("/:id", adminMiddleware, async (c) => {
   const id = c.req.param("id");
-  const body = await c.req.json().catch(() => ({}));
+  const body = c.get("parsedBody") || await c.req.json().catch(() => ({}));
 
-  const { uid, subject, content, priority, type, isActive, isPinned, showOnce, startsAt, expiresAt } = body as {
-    uid?: string;
+  const { subject, content, priority, type, isActive, isPinned, showOnce, startsAt, expiresAt } = body as {
     subject?: string;
     content?: string;
     priority?: AnnouncementPriority;
@@ -215,20 +196,13 @@ announcementsRouter.put("/:id", async (c) => {
     expiresAt?: number | null;
   };
 
-  if (!uid) {
-    return c.json({ success: false, error: "uid is required" }, 400);
-  }
-
   if (!ObjectId.isValid(id)) {
     return c.json({ success: false, error: "Invalid announcement ID" }, 400);
   }
 
   try {
     const db = await getDB();
-
-    if (!(await isAdmin(db, uid))) {
-      return c.json({ success: false, error: "Unauthorized" }, 403);
-    }
+    // Admin check is already done by adminMiddleware
 
     const existing = await db.collection(COLLECTION).findOne({ _id: new ObjectId(id) });
     if (!existing) {
@@ -263,14 +237,9 @@ announcementsRouter.put("/:id", async (c) => {
   }
 });
 
-// DELETE /:id - Delete announcement (admin only)
-announcementsRouter.delete("/:id", async (c) => {
+// DELETE /:id - Delete announcement (protected by adminMiddleware)
+announcementsRouter.delete("/:id", adminMiddleware, async (c) => {
   const id = c.req.param("id");
-  const uid = c.req.query("uid");
-
-  if (!uid) {
-    return c.json({ success: false, error: "uid is required" }, 400);
-  }
 
   if (!ObjectId.isValid(id)) {
     return c.json({ success: false, error: "Invalid announcement ID" }, 400);
@@ -278,10 +247,7 @@ announcementsRouter.delete("/:id", async (c) => {
 
   try {
     const db = await getDB();
-
-    if (!(await isAdmin(db, uid))) {
-      return c.json({ success: false, error: "Unauthorized" }, 403);
-    }
+    // Admin check is already done by adminMiddleware
 
     const result = await db.collection(COLLECTION).deleteOne({ _id: new ObjectId(id) });
 

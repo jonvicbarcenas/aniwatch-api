@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import type { ServerContext } from "../config/context.js";
 import { getDB } from "../config/mongodb.js";
+import { adminMiddleware } from "../middleware/auth.js";
 
 export type AppSettings = {
   commentsEnabled: boolean;
@@ -55,27 +56,17 @@ async function handleGet(c: any) {
 settingsRouter.get("", handleGet);
 settingsRouter.get("/", handleGet);
 
+// Update settings - Admin only (protected by adminMiddleware)
 async function handlePut(c: any) {
-  const body = (await c.req.json().catch(() => ({}))) as {
-    uid?: string;
+  const body = c.get("parsedBody") || (await c.req.json().catch(() => ({}))) as {
     commentsEnabled?: unknown;
     watchRequiresAuth?: unknown;
     globalChatEnabled?: unknown;
   };
 
-  if (!body.uid) {
-    return c.json({ success: false, error: 'uid is required' }, 400);
-  }
-
+  // Admin check is already done by adminMiddleware
   try {
     const db = await getDB();
-
-    // Authorization: only admins can update.
-    // NOTE: This trusts the provided uid. In a production app you should verify a Firebase ID token.
-    const user = await db.collection('users').findOne({ uid: body.uid });
-    if (!user || user.isAdmin !== true) {
-      return c.json({ success: false, error: 'Unauthorized' }, 403);
-    }
 
     const patch: Partial<AppSettings> = {};
     if (typeof body.commentsEnabled === 'boolean') patch.commentsEnabled = body.commentsEnabled;
@@ -109,5 +100,5 @@ async function handlePut(c: any) {
   }
 }
 
-settingsRouter.put("", handlePut);
-settingsRouter.put("/", handlePut);
+settingsRouter.put("", adminMiddleware, handlePut);
+settingsRouter.put("/", adminMiddleware, handlePut);

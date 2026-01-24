@@ -1,6 +1,8 @@
 import { Hono } from "hono";
 import { getDB } from "../config/mongodb.js";
 import type { ServerContext } from "../config/context.js";
+import { authMiddleware, getVerifiedUid } from "../middleware/auth.js";
+import { isFirebaseConfigured } from "../config/firebase.js";
 
 export const chatRouter = new Hono<ServerContext>();
 
@@ -15,12 +17,21 @@ chatRouter.use("*", async (c, next) => {
 /**
  * Chat read receipts and unread count
  */
-// Mark messages as seen up to a timestamp
-chatRouter.post("/messages/seen", async (c) => {
-    const body = await c.req.json().catch(() => ({}));
-    const { userId, username, upToCreatedAt } = body as { userId?: string; username?: string; upToCreatedAt?: number };
+// Mark messages as seen up to a timestamp - Protected
+chatRouter.post("/messages/seen", authMiddleware, async (c) => {
+    const body = c.get("parsedBody") || await c.req.json().catch(() => ({}));
+    const { userId: bodyUserId, username, upToCreatedAt } = body as { userId?: string; username?: string; upToCreatedAt?: number };
+    
+    const verifiedUid = getVerifiedUid(c);
+    const userId = verifiedUid || bodyUserId;
+    
     if (!userId || !username || !Number.isFinite(upToCreatedAt)) {
         return c.json({ success: false, error: "Missing required fields" }, 400);
+    }
+
+    // Security: Users can only mark messages as seen by themselves
+    if (isFirebaseConfigured() && verifiedUid && bodyUserId && verifiedUid !== bodyUserId) {
+        return c.json({ success: false, error: "Cannot mark messages as seen for another user" }, 403);
     }
 
     const db = await getDB();
@@ -34,10 +45,19 @@ chatRouter.post("/messages/seen", async (c) => {
     return c.json({ success: true });
 });
 
-// Unread count for a user
-chatRouter.get("/unread-count", async (c) => {
-    const userId = c.req.query("userId");
+// Unread count for a user - Protected
+chatRouter.get("/unread-count", authMiddleware, async (c) => {
+    const queryUserId = c.req.query("userId");
+    const verifiedUid = getVerifiedUid(c);
+    const userId = verifiedUid || queryUserId;
+    
     if (!userId) return c.json({ success: false, error: "userId required" }, 400);
+    
+    // Security: Users can only check their own unread count
+    if (isFirebaseConfigured() && verifiedUid && queryUserId && verifiedUid !== queryUserId) {
+        return c.json({ success: false, error: "Cannot check unread count for another user" }, 403);
+    }
+    
     const db = await getDB();
     const count = await db.collection("chatMessages").countDocuments({
         $or: [
@@ -95,18 +115,27 @@ chatRouter.get("/messages", async (c) => {
     return c.json({ success: true, data: messages });
 });
 
-chatRouter.post("/messages", async (c) => {
-    const body = await c.req.json().catch(() => ({}));
+// Post a chat message - Protected
+chatRouter.post("/messages", authMiddleware, async (c) => {
+    const body = c.get("parsedBody") || await c.req.json().catch(() => ({}));
 
-    const { userId, username, userAvatar, text } = body as {
+    const { userId: bodyUserId, username, userAvatar, text } = body as {
         userId?: string;
         username?: string;
         userAvatar?: string;
         text?: string;
     };
 
+    const verifiedUid = getVerifiedUid(c);
+    const userId = verifiedUid || bodyUserId;
+
     if (!userId || !username || !text) {
         return c.json({ success: false, error: "Missing required fields" }, 400);
+    }
+
+    // Security: Users can only post messages as themselves
+    if (isFirebaseConfigured() && verifiedUid && bodyUserId && verifiedUid !== bodyUserId) {
+        return c.json({ success: false, error: "Cannot post message as another user" }, 403);
     }
 
     const trimmed = String(text).trim();

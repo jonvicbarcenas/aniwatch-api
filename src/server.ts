@@ -22,6 +22,7 @@ import { announcementsRouter } from "./routes/announcements.js";
 import { logging } from "./middleware/logging.js";
 import { cacheConfigSetter, cacheControl } from "./middleware/cache.js";
 import { connectMongoDB } from "./config/mongodb.js";
+import { initializeFirebaseAdmin } from "./config/firebase.js";
 
 import pkgJson from "../package.json" with { type: "json" };
 
@@ -90,6 +91,9 @@ app.onError(errorHandler);
 
     // Connect to MongoDB
     connectMongoDB().catch((err) => log.error(`MongoDB init error: ${err}`));
+
+    // Initialize Firebase Admin SDK for token verification
+    initializeFirebaseAdmin();
 
     const server = serve({
         port: env.ANIWATCH_API_PORT,

@@ -2,6 +2,8 @@ import { Hono } from "hono";
 import { ObjectId } from "mongodb";
 import { getDB } from "../config/mongodb.js";
 import type { ServerContext } from "../config/context.js";
+import { authMiddleware, getVerifiedUid } from "../middleware/auth.js";
+import { isFirebaseConfigured } from "../config/firebase.js";
 
 export const commentsRouter = new Hono<ServerContext>();
 
@@ -81,13 +83,21 @@ commentsRouter.get("/anime/:animeId/all", async (c) => {
     return c.json({ success: true, data: formattedComments });
 });
 
-// Post a new comment
-commentsRouter.post("/", async (c) => {
-    const body = await c.req.json();
-    const { animeId, episodeId, userId, username, userAvatar, content, parentId, isSpoiler } = body;
+// Post a new comment - Protected
+commentsRouter.post("/", authMiddleware, async (c) => {
+    const body = c.get("parsedBody") || await c.req.json();
+    const { animeId, episodeId, userId: bodyUserId, username, userAvatar, content, parentId, isSpoiler } = body;
+
+    const verifiedUid = getVerifiedUid(c);
+    const userId = verifiedUid || bodyUserId;
 
     if (!animeId || !userId || !username || !content) {
         return c.json({ success: false, error: "Missing required fields" }, 400);
+    }
+
+    // Security: Users can only post comments as themselves
+    if (isFirebaseConfigured() && verifiedUid && bodyUserId && verifiedUid !== bodyUserId) {
+        return c.json({ success: false, error: "Cannot post comment as another user" }, 403);
     }
 
     if (content.length > 500) {
@@ -113,11 +123,14 @@ commentsRouter.post("/", async (c) => {
     return c.json({ success: true, data: { ...comment, _id: result.insertedId.toString() } });
 });
 
-// Edit a comment
-commentsRouter.put("/:commentId", async (c) => {
+// Edit a comment - Protected
+commentsRouter.put("/:commentId", authMiddleware, async (c) => {
     const { commentId } = c.req.param();
-    const body = await c.req.json();
-    const { content, userId } = body;
+    const body = c.get("parsedBody") || await c.req.json();
+    const { content, userId: bodyUserId } = body;
+
+    const verifiedUid = getVerifiedUid(c);
+    const userId = verifiedUid || bodyUserId;
 
     if (!content || !userId) {
         return c.json({ success: false, error: "Content and userId are required" }, 400);
@@ -134,6 +147,7 @@ commentsRouter.put("/:commentId", async (c) => {
         return c.json({ success: false, error: "Comment not found" }, 404);
     }
 
+    // Security: Users can only edit their own comments (verified via token)
     if (comment.userId !== userId) {
         return c.json({ success: false, error: "Unauthorized" }, 403);
     }
@@ -146,11 +160,14 @@ commentsRouter.put("/:commentId", async (c) => {
     return c.json({ success: true });
 });
 
-// Delete a comment
-commentsRouter.delete("/:commentId", async (c) => {
+// Delete a comment - Protected
+commentsRouter.delete("/:commentId", authMiddleware, async (c) => {
     const { commentId } = c.req.param();
-    const body = await c.req.json().catch(() => ({}));
-    const { userId } = body;
+    const body = c.get("parsedBody") || await c.req.json().catch(() => ({}));
+    const { userId: bodyUserId } = body;
+
+    const verifiedUid = getVerifiedUid(c);
+    const userId = verifiedUid || bodyUserId;
 
     if (!userId) {
         return c.json({ success: false, error: "userId is required" }, 400);
@@ -163,6 +180,7 @@ commentsRouter.delete("/:commentId", async (c) => {
         return c.json({ success: false, error: "Comment not found" }, 404);
     }
 
+    // Security: Users can only delete their own comments (verified via token)
     if (comment.userId !== userId) {
         return c.json({ success: false, error: "Unauthorized" }, 403);
     }
@@ -178,14 +196,22 @@ commentsRouter.delete("/:commentId", async (c) => {
     return c.json({ success: true });
 });
 
-// Like/Unlike a comment
-commentsRouter.post("/:commentId/like", async (c) => {
+// Like/Unlike a comment - Protected
+commentsRouter.post("/:commentId/like", authMiddleware, async (c) => {
     const { commentId } = c.req.param();
-    const body = await c.req.json();
-    const { userId } = body;
+    const body = c.get("parsedBody") || await c.req.json();
+    const { userId: bodyUserId } = body;
+
+    const verifiedUid = getVerifiedUid(c);
+    const userId = verifiedUid || bodyUserId;
 
     if (!userId) {
         return c.json({ success: false, error: "userId is required" }, 400);
+    }
+
+    // Security: Users can only like as themselves
+    if (isFirebaseConfigured() && verifiedUid && bodyUserId && verifiedUid !== bodyUserId) {
+        return c.json({ success: false, error: "Cannot like as another user" }, 403);
     }
 
     const db = await getDB();

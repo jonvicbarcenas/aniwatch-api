@@ -19,6 +19,20 @@ export const SERVERLESS_ENVIRONMENTS = [
 
 //
 export const env = cleanEnv(process.env, {
+    // Firebase Admin SDK Configuration
+    FIREBASE_PROJECT_ID: str({
+        default: undefined,
+        desc: "Firebase project ID for Admin SDK authentication.",
+    }),
+    FIREBASE_CLIENT_EMAIL: str({
+        default: undefined,
+        desc: "Firebase service account client email.",
+    }),
+    FIREBASE_PRIVATE_KEY: str({
+        default: undefined,
+        desc: "Firebase service account private key (with newlines as \\n).",
+    }),
+
     ANIWATCH_API_PORT: port({
         default: 4000,
         desc: "Port number of the Aniwatch API.",
