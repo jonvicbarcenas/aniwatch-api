@@ -1,3 +1,12 @@
+# [3.14.0](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.13.0...v3.14.0) (2026-01-24)
+
+
+### Features
+
+* add Firebase token verification for API security ([ce7d451](https://github.com/ghoshRitesh12/aniwatch-api/commit/ce7d4514140169b4cfe7a231b0d841b6bf85b061))
+
+
+
 # [3.13.0](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.12.0...v3.13.0) (2026-01-20)
 
 
@@ -26,15 +35,6 @@
 ### Features
 
 * **auth:** add username lookup and enforce unique usernames (case-insensitive) ([6569224](https://github.com/ghoshRitesh12/aniwatch-api/commit/656922420f0bbc34134c33f5d96f0d9912eac911))
-
-
-
-# [3.10.0](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.9.0...v3.10.0) (2026-01-06)
-
-
-### Features
-
-* enhance streaming proxy with caching ([39f07a8](https://github.com/ghoshRitesh12/aniwatch-api/commit/39f07a8ca3660c7ec1eea47e9732ce008ab3ba5b))
 
 
 
