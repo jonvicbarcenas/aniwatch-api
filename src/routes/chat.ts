@@ -3,6 +3,12 @@ import { getDB } from "../config/mongodb.js";
 import type { ServerContext } from "../config/context.js";
 import { authMiddleware, getVerifiedUid } from "../middleware/auth.js";
 import { isFirebaseConfigured } from "../config/firebase.js";
+import { broadcastChatMessage } from "../services/chatWebhook.js";
+import { 
+    getCachedChatMessages, 
+    getCachedUnreadCount, 
+    invalidateChatMessagesCache 
+} from "../helpers/chatCache.js";
 
 export const chatRouter = new Hono<ServerContext>();
 
@@ -59,13 +65,10 @@ chatRouter.get("/unread-count", authMiddleware, async (c) => {
     }
     
     const db = await getDB();
-    const count = await db.collection("chatMessages").countDocuments({
-        $or: [
-            { seenBy: { $exists: false } },
-            { seenBy: { $size: 0 } },
-            { seenBy: { $not: { $elemMatch: { userId } } } },
-        ],
-    });
+    
+    // Use Redis cache for faster retrieval
+    const count = await getCachedUnreadCount(db, userId);
+    
     return c.json({ success: true, data: { count } });
 });
 
@@ -75,7 +78,7 @@ chatRouter.get("/unread-count", authMiddleware, async (c) => {
  * GET /messages?limit=50&after=<ms>&before=<ms>
  * - `after`: return messages with createdAt > after
  * - `before`: return messages with createdAt < before (useful for pagination)
- * Server returns messages sorted ascending by createdAt.
+ * Server returns messages sorted ascending by createdAt with hasMore flag.
  */
 chatRouter.get("/messages", async (c) => {
     const limitParam = c.req.query("limit");
@@ -86,33 +89,12 @@ chatRouter.get("/messages", async (c) => {
     const after = afterParam ? Number(afterParam) : undefined;
     const before = beforeParam ? Number(beforeParam) : undefined;
 
-    const createdAtQuery: Record<string, number> = {};
-    if (Number.isFinite(after)) createdAtQuery.$gt = after!;
-    if (Number.isFinite(before)) createdAtQuery.$lt = before!;
-
-    const query: Record<string, unknown> = {};
-    if (Object.keys(createdAtQuery).length > 0) {
-        query.createdAt = createdAtQuery;
-    }
-
     const db = await getDB();
 
-    // Fetch newest first, then reverse to ascending for chat UI.
-    const docs = await db
-        .collection("chatMessages")
-        .find(query)
-        .sort({ createdAt: -1 })
-        .limit(limit)
-        .toArray();
+    // Use Redis cache for faster retrieval
+    const data = await getCachedChatMessages(db, limit, after, before);
 
-    const messages = docs
-        .map((m) => ({
-            ...m,
-            _id: m._id.toString(),
-        }))
-        .reverse();
-
-    return c.json({ success: true, data: messages });
+    return c.json({ success: true, data });
 });
 
 // Post a chat message - Protected
@@ -158,8 +140,16 @@ chatRouter.post("/messages", authMiddleware, async (c) => {
     const db = await getDB();
     const result = await db.collection("chatMessages").insertOne(message);
 
+    const newMessage = { ...message, _id: result.insertedId.toString() };
+
+    // Invalidate chat cache so users get fresh messages
+    await invalidateChatMessagesCache();
+
+    // Broadcast to all connected webhook clients
+    broadcastChatMessage(newMessage);
+
     return c.json({
         success: true,
-        data: { ...message, _id: result.insertedId.toString() },
+        data: newMessage,
     });
 });

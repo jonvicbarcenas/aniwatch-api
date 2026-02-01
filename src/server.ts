@@ -23,6 +23,7 @@ import { logging } from "./middleware/logging.js";
 import { cacheConfigSetter, cacheControl } from "./middleware/cache.js";
 import { connectMongoDB } from "./config/mongodb.js";
 import { initializeFirebaseAdmin } from "./config/firebase.js";
+import { initChatWebhook, closeChatWebhook } from "./services/chatWebhook.js";
 
 import pkgJson from "../package.json" with { type: "json" };
 
@@ -99,22 +100,33 @@ app.onError(errorHandler);
         port: env.ANIWATCH_API_PORT,
         hostname: "0.0.0.0",
         fetch: app.fetch,
-    }).addListener("listening", () =>
+    }).addListener("listening", () => {
         log.info(
             `aniwatch-api RUNNING at http://0.0.0.0:${env.ANIWATCH_API_PORT}`
-        )
-    );
+        );
+        
+        // Initialize WebSocket for chat webhooks
+        initChatWebhook(server);
+    });
 
-    process.on("SIGINT", () => execGracefulShutdown(server));
-    process.on("SIGTERM", () => execGracefulShutdown(server));
+    process.on("SIGINT", () => {
+        closeChatWebhook();
+        execGracefulShutdown(server);
+    });
+    process.on("SIGTERM", () => {
+        closeChatWebhook();
+        execGracefulShutdown(server);
+    });
     process.on("uncaughtException", (err) => {
         log.error(`Uncaught Exception: ${err.message}`);
+        closeChatWebhook();
         execGracefulShutdown(server);
     });
     process.on("unhandledRejection", (reason, promise) => {
         log.error(
             `Unhandled Rejection at: ${promise}, reason: ${reason instanceof Error ? reason.message : reason}`
         );
+        closeChatWebhook();
         execGracefulShutdown(server);
     });
 

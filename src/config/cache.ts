@@ -15,7 +15,30 @@ export class AniwatchAPICache {
     constructor() {
         const redisConnURL = env.ANIWATCH_API_REDIS_CONN_URL;
         this.enabled = AniwatchAPICache.enabled = Boolean(redisConnURL);
-        this.client = this.enabled ? new Redis(String(redisConnURL)) : null;
+        
+        if (this.enabled) {
+            const urlString = String(redisConnURL);
+            
+            this.client = new Redis(urlString, {
+                retryStrategy: (times) => {
+                    const delay = Math.min(times * 50, 2000);
+                    return delay;
+                },
+                maxRetriesPerRequest: 3,
+                lazyConnect: false,
+            });
+
+            // Log connection status
+            this.client.on('connect', () => {
+                console.info('Redis cache connected successfully');
+            });
+
+            this.client.on('error', (err) => {
+                console.error('Redis cache error:', err.message);
+            });
+        } else {
+            this.client = null;
+        }
     }
 
     static getInstance() {
