@@ -1,3 +1,7 @@
+## [3.15.1](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.15.0...v3.15.1) (2026-02-01)
+
+
+
 # [3.15.0](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.14.0...v3.15.0) (2026-02-01)
 
 
@@ -31,10 +35,6 @@
 ### Features
 
 * **admin:** add endpoint to retrieve recent watchers across all users ([a7d43aa](https://github.com/ghoshRitesh12/aniwatch-api/commit/a7d43aafb2bc4bfd3b58e916fdb4f690edc373a5))
-
-
-
-## [3.11.1](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.11.0...v3.11.1) (2026-01-06)
 
 
 
