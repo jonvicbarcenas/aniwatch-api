@@ -1,0 +1,42 @@
+name: Discord Notification
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  discord-notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Discord Webhook
+        env:
+          WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+        run: |
+          # Escape the commit message for JSON (handles quotes and newlines)
+          ESCAPED_MSG=$(echo "$COMMIT_MESSAGE" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g')
+          
+          # Construct JSON payload with an embed
+          # Hides username and repository link, showing only the update message
+          JSON_PAYLOAD=$(cat <<EOF
+          {
+            "username": "API Update",
+            "avatar_url": "https://cdn-icons-png.flaticon.com/512/8297/8297437.png",
+            "embeds": [
+              {
+                "title": "⚡ API Update Deployed",
+                "description": "$ESCAPED_MSG",
+                "color": 15158332,
+                "footer": {
+                  "text": "Automated Deployment"
+                },
+                "timestamp": "$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+              }
+            ]
+          }
+          EOF
+          )
+
+          # Send to Discord
+          curl -H "Content-Type: application/json" -d "$JSON_PAYLOAD" "$WEBHOOK_URL"
