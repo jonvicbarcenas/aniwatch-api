@@ -1,3 +1,12 @@
+## [3.16.1](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.16.0...v3.16.1) (2026-02-20)
+
+
+### Bug Fixes
+
+* removed insecure auth fallback ([f871d56](https://github.com/ghoshRitesh12/aniwatch-api/commit/f871d56a70aa683f309da618affb748df54e9d18))
+
+
+
 # [3.16.0](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.15.1...v3.16.0) (2026-02-20)
 
 
@@ -26,15 +35,6 @@
 ### Features
 
 * add Firebase token verification for API security ([ce7d451](https://github.com/ghoshRitesh12/aniwatch-api/commit/ce7d4514140169b4cfe7a231b0d841b6bf85b061))
-
-
-
-# [3.13.0](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.12.0...v3.13.0) (2026-01-20)
-
-
-### Features
-
-* add announcements API routes ([3b123c5](https://github.com/ghoshRitesh12/aniwatch-api/commit/3b123c5bf27f2d0f1924723741e10ec7583c9b57))
 
 
 
