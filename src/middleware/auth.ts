@@ -41,13 +41,12 @@ export async function authMiddleware(c: Context<ServerContext>, next: Next) {
     const authHeader = c.req.header("Authorization");
     const token = extractBearerToken(authHeader);
 
-    // If Firebase is configured and we have a token, verify it
     if (isFirebaseConfigured() && token) {
         const decoded = await verifyIdToken(token);
         if (decoded) {
             c.set("uid", decoded.uid);
             c.set("email", decoded.email);
-            
+
             // Check if user is admin
             try {
                 const db = await getDB();
@@ -56,22 +55,13 @@ export async function authMiddleware(c: Context<ServerContext>, next: Next) {
             } catch {
                 c.set("isAdmin", false);
             }
-            
+
             return next();
         }
-        // Token provided but invalid
-        return c.json({ success: false, error: "Invalid or expired token" }, 401);
     }
 
-    // If Firebase is configured but no token provided
-    if (isFirebaseConfigured()) {
-        return c.json({ success: false, error: "Authorization header required" }, 401);
-    }
-
-    // Fallback: Firebase not configured, use uid from request (backward compatibility)
-    // This should only be used during development/migration
-    log.warn("Firebase not configured - using unverified uid from request");
-    return next();
+    // Token not provided, invalid, or Firebase not configured
+    return c.json({ success: false, error: "Invalid or missing authorization" }, 401);
 }
 
 /**
@@ -88,7 +78,7 @@ export async function optionalAuthMiddleware(c: Context<ServerContext>, next: Ne
         if (decoded) {
             c.set("uid", decoded.uid);
             c.set("email", decoded.email);
-            
+
             // Check if user is admin
             try {
                 const db = await getDB();
@@ -111,72 +101,29 @@ export async function adminMiddleware(c: Context<ServerContext>, next: Next) {
     const authHeader = c.req.header("Authorization");
     const token = extractBearerToken(authHeader);
 
-    // If Firebase is configured, require token verification
-    if (isFirebaseConfigured()) {
-        if (!token) {
-            return c.json({ success: false, error: "Authorization header required" }, 401);
-        }
-
+    if (isFirebaseConfigured() && token) {
         const decoded = await verifyIdToken(token);
-        if (!decoded) {
-            return c.json({ success: false, error: "Invalid or expired token" }, 401);
-        }
+        if (decoded) {
+            // Verify admin status
+            try {
+                const db = await getDB();
+                const user = await db.collection("users").findOne({ uid: decoded.uid });
+                if (!user || user.isAdmin !== true) {
+                    return c.json({ success: false, error: "Unauthorized - Admin access required" }, 403);
+                }
 
-        // Verify admin status
-        try {
-            const db = await getDB();
-            const user = await db.collection("users").findOne({ uid: decoded.uid });
-            if (!user || user.isAdmin !== true) {
-                return c.json({ success: false, error: "Unauthorized - Admin access required" }, 403);
+                c.set("uid", decoded.uid);
+                c.set("email", decoded.email);
+                c.set("isAdmin", true);
+                return next();
+            } catch (error) {
+                log.error(`Admin check failed: ${error instanceof Error ? error.message : error}`);
+                return c.json({ success: false, error: "Authorization check failed" }, 500);
             }
-
-            c.set("uid", decoded.uid);
-            c.set("email", decoded.email);
-            c.set("isAdmin", true);
-            return next();
-        } catch (error) {
-            log.error(`Admin check failed: ${error instanceof Error ? error.message : error}`);
-            return c.json({ success: false, error: "Authorization check failed" }, 500);
         }
     }
 
-    // Fallback: Firebase not configured, check uid from request body/query
-    // This maintains backward compatibility but is insecure
-    log.warn("Firebase not configured - using unverified admin check");
-    
-    let uid: string | undefined;
-    
-    // Try to get uid from query params first
-    uid = c.req.query("uid");
-    
-    // If not in query, try request body for POST/PUT/DELETE
-    if (!uid && ["POST", "PUT", "DELETE"].includes(c.req.method)) {
-        try {
-            const body = await c.req.json();
-            uid = body?.uid;
-            // Re-set the body since we consumed it
-            c.set("parsedBody", body);
-        } catch {
-            // Body parsing failed, uid stays undefined
-        }
-    }
-
-    if (!uid) {
-        return c.json({ success: false, error: "uid is required" }, 400);
-    }
-
-    try {
-        const db = await getDB();
-        const user = await db.collection("users").findOne({ uid });
-        if (!user || user.isAdmin !== true) {
-            return c.json({ success: false, error: "Unauthorized" }, 403);
-        }
-        c.set("uid", uid);
-        c.set("isAdmin", true);
-        return next();
-    } catch (error) {
-        return c.json({ success: false, error: "Authorization check failed" }, 500);
-    }
+    return c.json({ success: false, error: "Invalid or missing authorization" }, 401);
 }
 
 /**

@@ -58,7 +58,7 @@ app.get("/health", (c) => c.text("daijoubu", { status: 200 }));
 app.get("/v", async (c) =>
     c.text(
         `aniwatch-api: v${"version" in pkgJson && pkgJson?.version ? pkgJson.version : "-1"}\n` +
-            `aniwatch-package: v${"dependencies" in pkgJson && pkgJson?.dependencies?.aniwatch ? pkgJson?.dependencies?.aniwatch : "-1"}`
+        `aniwatch-package: v${"dependencies" in pkgJson && pkgJson?.dependencies?.aniwatch ? pkgJson?.dependencies?.aniwatch : "-1"}`
     )
 );
 
@@ -104,9 +104,9 @@ app.onError(errorHandler);
         log.info(
             `aniwatch-api RUNNING at http://0.0.0.0:${env.ANIWATCH_API_PORT}`
         );
-        
+
         // Initialize WebSocket for chat webhooks
-        initChatWebhook(server);
+        initChatWebhook(server as unknown as import("http").Server);
     });
 
     process.on("SIGINT", () => {

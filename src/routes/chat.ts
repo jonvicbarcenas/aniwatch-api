@@ -4,10 +4,10 @@ import type { ServerContext } from "../config/context.js";
 import { authMiddleware, getVerifiedUid } from "../middleware/auth.js";
 import { isFirebaseConfigured } from "../config/firebase.js";
 import { broadcastChatMessage } from "../services/chatWebhook.js";
-import { 
-    getCachedChatMessages, 
-    getCachedUnreadCount, 
-    invalidateChatMessagesCache 
+import {
+    getCachedChatMessages,
+    getCachedUnreadCount,
+    invalidateChatMessagesCache
 } from "../helpers/chatCache.js";
 
 import { ObjectId } from "mongodb";
@@ -29,10 +29,10 @@ chatRouter.use("*", async (c, next) => {
 chatRouter.post("/messages/seen", authMiddleware, async (c) => {
     const body = c.get("parsedBody") || await c.req.json().catch(() => ({}));
     const { userId: bodyUserId, username, upToCreatedAt } = body as { userId?: string; username?: string; upToCreatedAt?: number };
-    
+
     const verifiedUid = getVerifiedUid(c);
     const userId = verifiedUid || bodyUserId;
-    
+
     if (!userId || !username || !Number.isFinite(upToCreatedAt)) {
         return c.json({ success: false, error: "Missing required fields" }, 400);
     }
@@ -58,19 +58,19 @@ chatRouter.get("/unread-count", authMiddleware, async (c) => {
     const queryUserId = c.req.query("userId");
     const verifiedUid = getVerifiedUid(c);
     const userId = verifiedUid || queryUserId;
-    
+
     if (!userId) return c.json({ success: false, error: "userId required" }, 400);
-    
+
     // Security: Users can only check their own unread count
     if (isFirebaseConfigured() && verifiedUid && queryUserId && verifiedUid !== queryUserId) {
         return c.json({ success: false, error: "Cannot check unread count for another user" }, 403);
     }
-    
+
     const db = await getDB();
-    
+
     // Use Redis cache for faster retrieval
     const count = await getCachedUnreadCount(db, userId);
-    
+
     return c.json({ success: true, data: { count } });
 });
 
@@ -197,7 +197,7 @@ chatRouter.post("/messages/:messageId/react", authMiddleware, async (c) => {
     if (hasReacted) {
         await db.collection("chatMessages").updateOne(
             { _id: oid },
-            { $pull: { reactions: { userId } } }
+            { $pull: { reactions: { userId } } as any }
         );
     } else {
         await db.collection("chatMessages").updateOne(
