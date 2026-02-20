@@ -10,6 +10,8 @@ import {
     invalidateChatMessagesCache 
 } from "../helpers/chatCache.js";
 
+import { ObjectId } from "mongodb";
+
 export const chatRouter = new Hono<ServerContext>();
 
 // Disable caching for chat
@@ -152,4 +154,70 @@ chatRouter.post("/messages", authMiddleware, async (c) => {
         success: true,
         data: newMessage,
     });
+});
+
+// Toggle heart reaction on a message - Protected
+chatRouter.post("/messages/:messageId/react", authMiddleware, async (c) => {
+    const { messageId } = c.req.param();
+    const body = c.get("parsedBody") || await c.req.json().catch(() => ({}));
+
+    const { userId: bodyUserId, username } = body as {
+        userId?: string;
+        username?: string;
+    };
+
+    const verifiedUid = getVerifiedUid(c);
+    const userId = verifiedUid || bodyUserId;
+
+    if (!userId || !username) {
+        return c.json({ success: false, error: "Missing required fields" }, 400);
+    }
+
+    // Security: Users can only react as themselves
+    if (isFirebaseConfigured() && verifiedUid && bodyUserId && verifiedUid !== bodyUserId) {
+        return c.json({ success: false, error: "Cannot react as another user" }, 403);
+    }
+
+    let oid: ObjectId;
+    try {
+        oid = new ObjectId(messageId);
+    } catch {
+        return c.json({ success: false, error: "Invalid messageId" }, 400);
+    }
+
+    const db = await getDB();
+    const existing = await db.collection("chatMessages").findOne({ _id: oid });
+    if (!existing) {
+        return c.json({ success: false, error: "Message not found" }, 404);
+    }
+
+    const reactions: Array<{ userId: string; username: string }> = (existing as any).reactions || [];
+    const hasReacted = reactions.some((r) => r.userId === userId);
+
+    if (hasReacted) {
+        await db.collection("chatMessages").updateOne(
+            { _id: oid },
+            { $pull: { reactions: { userId } } }
+        );
+    } else {
+        await db.collection("chatMessages").updateOne(
+            { _id: oid },
+            { $addToSet: { reactions: { userId, username } } }
+        );
+    }
+
+    const updated = await db.collection("chatMessages").findOne({ _id: oid });
+    if (!updated) {
+        return c.json({ success: false, error: "Failed to load updated message" }, 500);
+    }
+
+    const updatedMessage = { ...(updated as any), _id: (updated as any)._id.toString() };
+
+    // Invalidate chat message caches so reloads reflect reactions immediately
+    await invalidateChatMessagesCache();
+
+    // Broadcast update so all clients reflect the reaction change in real-time
+    broadcastChatMessage(updatedMessage);
+
+    return c.json({ success: true, data: updatedMessage });
 });

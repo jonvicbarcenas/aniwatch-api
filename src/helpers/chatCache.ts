@@ -106,10 +106,31 @@ export async function getCachedUnreadCount(
  * Call this when a new message is posted
  */
 export async function invalidateChatMessagesCache(): Promise<void> {
-    // Since we can't easily get all cache keys, we'll rely on the short TTL
-    // In production, you might want to use Redis SCAN to find and delete matching keys
-    // For now, the 10-second TTL ensures stale data doesn't persist long
-    console.info('Chat cache invalidation triggered (relying on TTL)');
+    try {
+        const anyCache = cache as unknown as { enabled?: boolean; client?: any };
+        if (!anyCache?.enabled || !anyCache?.client) {
+            console.info('Chat cache invalidation: cache not enabled, skipping');
+            return;
+        }
+        const client = anyCache.client;
+        const pattern = 'chat:messages:*';
+        let cursor = '0';
+        const keys: string[] = [];
+        do {
+            const res = await client.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
+            cursor = res[0];
+            const batch = res[1] as string[];
+            if (Array.isArray(batch) && batch.length) keys.push(...batch);
+        } while (cursor !== '0');
+        if (keys.length) {
+            await client.del(...keys);
+            console.info(`Chat cache invalidated: ${keys.length} keys deleted`);
+        } else {
+            console.info('Chat cache invalidation: no keys to delete');
+        }
+    } catch (err) {
+        console.warn('Chat cache invalidation failed:', (err as Error)?.message || err);
+    }
 }
 
 /**
