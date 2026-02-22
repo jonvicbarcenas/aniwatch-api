@@ -1,3 +1,12 @@
+# [3.17.0](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.16.1...v3.17.0) (2026-02-22)
+
+
+### Features
+
+* live profile enrichment for chat & comments ([57e5c51](https://github.com/ghoshRitesh12/aniwatch-api/commit/57e5c514bdae7ff812332cf9a10a6a660db04ce4))
+
+
+
 ## [3.16.1](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.16.0...v3.16.1) (2026-02-20)
 
 
@@ -26,15 +35,6 @@
 ### Features
 
 * implement redis caching for chat and api improvements ([c469352](https://github.com/ghoshRitesh12/aniwatch-api/commit/c469352b6cd90fb01fd2866de118143b659041cd))
-
-
-
-# [3.14.0](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.13.0...v3.14.0) (2026-01-24)
-
-
-### Features
-
-* add Firebase token verification for API security ([ce7d451](https://github.com/ghoshRitesh12/aniwatch-api/commit/ce7d4514140169b4cfe7a231b0d841b6bf85b061))
 
 
 
