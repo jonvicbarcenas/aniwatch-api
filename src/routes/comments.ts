@@ -54,11 +54,27 @@ commentsRouter.get("/episode/*", async (c) => {
         .sort({ createdAt: -1 })
         .toArray();
     
-    // Convert _id to string for frontend compatibility
-    const formattedComments = comments.map(c => ({
-        ...c,
-        _id: c._id.toString()
-    }));
+    const uids = Array.from(new Set(comments.map((x:any) => x.userId).filter(Boolean)));
+    let profiles: Record<string, any> = {};
+    if (uids.length) {
+        const { getProfilesBatch } = await import("../helpers/profileCache.js");
+        profiles = await getProfilesBatch(db, uids);
+    }
+
+    const formattedComments = comments.map((cm:any) => {
+        const p = profiles[cm.userId] || null;
+        const fallback = {
+            uid: cm.userId,
+            username: cm.username ?? 'unknown',
+            avatarUrl: cm.userAvatar ?? null,
+            displayName: null,
+        };
+        return {
+            ...cm,
+            _id: cm._id.toString(),
+            user: p ?? fallback,
+        };
+    });
     
     console.log(`Fetching comments for episodeId: ${episodeId}, found: ${formattedComments.length}`);
     return c.json({ success: true, data: formattedComments });
@@ -91,7 +107,7 @@ commentsRouter.post("/", authMiddleware, async (c) => {
     const verifiedUid = getVerifiedUid(c);
     const userId = verifiedUid || bodyUserId;
 
-    if (!animeId || !userId || !username || !content) {
+    if (!animeId || !userId || !content) {
         return c.json({ success: false, error: "Missing required fields" }, 400);
     }
 
@@ -109,8 +125,6 @@ commentsRouter.post("/", authMiddleware, async (c) => {
         animeId,
         episodeId: episodeId || null,
         userId,
-        username,
-        userAvatar,
         content,
         parentId: parentId || null,
         isSpoiler: isSpoiler || false,

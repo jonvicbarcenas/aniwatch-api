@@ -96,6 +96,23 @@ chatRouter.get("/messages", async (c) => {
     // Use Redis cache for faster retrieval
     const data = await getCachedChatMessages(db, limit, after, before);
 
+    // Enrich messages with user profile (no duplication)
+    const uids = Array.from(new Set((data.messages || []).map((m: any) => m.userId).filter(Boolean)));
+    if (uids.length) {
+        const { getProfilesBatch } = await import("../helpers/profileCache.js");
+        const profiles = await getProfilesBatch(db, uids);
+        data.messages = (data.messages || []).map((m: any) => {
+            const p = profiles[m.userId] || null;
+            const fallback = {
+                uid: m.userId,
+                username: m.username ?? 'unknown',
+                avatarUrl: m.userAvatar ?? null,
+                displayName: null,
+            };
+            return { ...m, user: p ?? fallback };
+        });
+    }
+
     return c.json({ success: true, data });
 });
 
@@ -113,7 +130,7 @@ chatRouter.post("/messages", authMiddleware, async (c) => {
     const verifiedUid = getVerifiedUid(c);
     const userId = verifiedUid || bodyUserId;
 
-    if (!userId || !username || !text) {
+    if (!userId || !text) {
         return c.json({ success: false, error: "Missing required fields" }, 400);
     }
 
@@ -133,8 +150,6 @@ chatRouter.post("/messages", authMiddleware, async (c) => {
 
     const message = {
         userId,
-        username,
-        userAvatar: userAvatar || null,
         text: trimmed,
         createdAt: Date.now(),
     };

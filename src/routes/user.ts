@@ -77,6 +77,13 @@ userRouter.post("/profile", authMiddleware, async (c) => {
         },
         { upsert: true }
     );
+
+    // Invalidate profile cache so updates reflect across chat/comments quickly
+    try {
+        const { invalidateProfileCache } = await import("../helpers/profileCache.js");
+        await invalidateProfileCache(uid);
+    } catch {}
+
     return c.json({ success: true });
 });
 
