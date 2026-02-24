@@ -1,3 +1,12 @@
+# [3.19.0](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.18.0...v3.19.0) (2026-02-24)
+
+
+### Features
+
+* add latest comments endpoint to comments router ([abebcd1](https://github.com/ghoshRitesh12/aniwatch-api/commit/abebcd19d683e2f1c0b42350614775de46d47e18))
+
+
+
 # [3.18.0](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.17.0...v3.18.0) (2026-02-24)
 
 
@@ -31,10 +40,6 @@
 ### Features
 
 * **chat:** add message reaction endpoint ([4887a4f](https://github.com/ghoshRitesh12/aniwatch-api/commit/4887a4fad3ecfc50d91269fed07f0add65c0537b))
-
-
-
-## [3.15.1](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.15.0...v3.15.1) (2026-02-01)
 
 
 
