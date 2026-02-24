@@ -15,14 +15,41 @@ commentsRouter.use("*", async (c, next) => {
     c.header("Expires", "0");
 });
 
+// Get latest comments across all anime (for landing page)
+commentsRouter.get("/latest", async (c) => {
+    const limitParam = c.req.query("limit");
+    const limit = Math.min(Math.max(parseInt(limitParam || "10", 10) || 10, 1), 20);
+    const db = await getDB();
+    const comments = await db.collection("comments")
+        .find({ parentId: null })
+        .sort({ createdAt: -1 })
+        .limit(limit)
+        .toArray();
+
+    const uids = Array.from(new Set(comments.map((x: any) => x.userId).filter(Boolean)));
+    let profiles: Record<string, any> = {};
+    if (uids.length) {
+        const { getProfilesBatch } = await import("../helpers/profileCache.js");
+        profiles = await getProfilesBatch(db, uids);
+    }
+
+    const formattedComments = comments.map((cm: any) => {
+        const p = profiles[cm.userId] || null;
+        const fallback = { uid: cm.userId, username: cm.username ?? 'unknown', avatarUrl: cm.userAvatar ?? null, displayName: null };
+        return { ...cm, _id: cm._id.toString(), user: p ?? fallback };
+    });
+
+    return c.json({ success: true, data: formattedComments });
+});
+
 // Get comments for an anime (general, not episode-specific)
 commentsRouter.get("/anime/:animeId", async (c) => {
     const { animeId } = c.req.param();
     const decodedAnimeId = decodeURIComponent(animeId);
     const db = await getDB();
     const comments = await db.collection("comments")
-        .find({ 
-            animeId: decodedAnimeId, 
+        .find({
+            animeId: decodedAnimeId,
             $or: [
                 { episodeId: null },
                 { episodeId: { $exists: false } }
@@ -30,7 +57,7 @@ commentsRouter.get("/anime/:animeId", async (c) => {
         })
         .sort({ createdAt: -1 })
         .toArray();
-    
+
     // Enrich with user profile (no duplication)
     const uids = Array.from(new Set(comments.map((x: any) => x.userId).filter(Boolean)));
     let profiles: Record<string, any> = {};
@@ -44,7 +71,7 @@ commentsRouter.get("/anime/:animeId", async (c) => {
         const fallback = { uid: cm.userId, username: cm.username ?? 'unknown', avatarUrl: cm.userAvatar ?? null, displayName: null };
         return { ...cm, _id: cm._id.toString(), user: p ?? fallback };
     });
-    
+
     return c.json({ success: true, data: formattedComments });
 });
 
@@ -61,15 +88,15 @@ commentsRouter.get("/episode/*", async (c) => {
         .find({ episodeId })
         .sort({ createdAt: -1 })
         .toArray();
-    
-    const uids = Array.from(new Set(comments.map((x:any) => x.userId).filter(Boolean)));
+
+    const uids = Array.from(new Set(comments.map((x: any) => x.userId).filter(Boolean)));
     let profiles: Record<string, any> = {};
     if (uids.length) {
         const { getProfilesBatch } = await import("../helpers/profileCache.js");
         profiles = await getProfilesBatch(db, uids);
     }
 
-    const formattedComments = comments.map((cm:any) => {
+    const formattedComments = comments.map((cm: any) => {
         const p = profiles[cm.userId] || null;
         const fallback = {
             uid: cm.userId,
@@ -83,7 +110,7 @@ commentsRouter.get("/episode/*", async (c) => {
             user: p ?? fallback,
         };
     });
-    
+
     console.log(`Fetching comments for episodeId: ${episodeId}, found: ${formattedComments.length}`);
     return c.json({ success: true, data: formattedComments });
 });
@@ -97,7 +124,7 @@ commentsRouter.get("/anime/:animeId/all", async (c) => {
         .find({ animeId: decodedAnimeId })
         .sort({ createdAt: -1 })
         .toArray();
-    
+
     // Enrich with user profile (no duplication)
     const uids = Array.from(new Set(comments.map((x: any) => x.userId).filter(Boolean)));
     let profiles: Record<string, any> = {};
@@ -111,7 +138,7 @@ commentsRouter.get("/anime/:animeId/all", async (c) => {
         const fallback = { uid: cm.userId, username: cm.username ?? 'unknown', avatarUrl: cm.userAvatar ?? null, displayName: null };
         return { ...cm, _id: cm._id.toString(), user: p ?? fallback };
     });
-    
+
     return c.json({ success: true, data: formattedComments });
 });
 
