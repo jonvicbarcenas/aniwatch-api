@@ -1,5 +1,13 @@
 import type { Db } from "mongodb";
 import { cache } from "../config/cache.js";
+import { env } from "../config/env.js";
+
+/** Base URL for the centralized avatar endpoint. Falls back to empty string (relative). */
+function getApiBase(): string {
+  return env.ANIWATCH_API_HOSTNAME
+    ? `https://${env.ANIWATCH_API_HOSTNAME}`
+    : "";
+}
 
 export type PublicUserProfile = {
   uid: string;
@@ -14,21 +22,29 @@ function profileCacheKey(uid: string) {
   return `user:profile:${uid}`;
 }
 
-function toPublicProfile(doc: any | null): PublicUserProfile | null {
+function toPublicProfile(doc: any | null, apiBase?: string): PublicUserProfile | null {
   if (!doc) return null;
+  const uid = String(doc.uid);
+  // Always use the centralized avatar endpoint so profile picture changes
+  // are reflected everywhere instantly without stale cached URLs.
+  // Always use the centralized avatar endpoint (reads both avatarUrl and photoURL fields)
+  const avatarUrl = apiBase
+    ? `${apiBase}/api/v2/user/${encodeURIComponent(uid)}/avatar`
+    : (doc.avatarUrl ?? doc.photoURL ?? null);
   return {
-    uid: String(doc.uid),
+    uid,
     username: doc.username ?? null,
     displayName: doc.displayName ?? null,
-    avatarUrl: doc.avatarUrl ?? null,
+    avatarUrl,
   };
 }
 
 export async function getProfile(db: Db, uid: string): Promise<PublicUserProfile | null> {
   const key = profileCacheKey(uid);
+  const apiBase = getApiBase();
   return await cache.getOrSet(async () => {
     const doc = await db.collection("users").findOne({ uid });
-    return toPublicProfile(doc);
+    return toPublicProfile(doc, apiBase);
   }, key, PROFILE_TTL_SECONDS);
 }
 
@@ -66,6 +82,7 @@ export async function getProfilesBatch(db: Db, uids: string[]): Promise<Record<s
 
   // Fetch misses from DB
   if (misses.length) {
+    const apiBase = getApiBase();
     const docs = await db
       .collection("users")
       .find({ uid: { $in: misses } })
@@ -73,7 +90,7 @@ export async function getProfilesBatch(db: Db, uids: string[]): Promise<Record<s
 
     const mapFromDb: Record<string, PublicUserProfile | null> = {};
     for (const doc of docs) {
-      const p = toPublicProfile(doc);
+      const p = toPublicProfile(doc, apiBase);
       if (p) mapFromDb[p.uid] = p;
     }
     for (const uid of misses) {

@@ -14,6 +14,44 @@ userRouter.get("/profile/:uid", async (c) => {
     return c.json({ success: true, data: profile });
 });
 
+/**
+ * Centralized avatar endpoint — always returns the latest avatar for a user.
+ * GET /api/v2/user/:uid/avatar
+ * 
+ * Returns a 302 redirect to the stored avatarUrl, or a 404 placeholder if none set.
+ * The frontend should use this URL for ALL avatar <img> tags so that
+ * changing profile picture is reflected everywhere instantly.
+ */
+userRouter.get("/:uid/avatar", async (c) => {
+    const { uid } = c.req.param();
+
+    const FALLBACK = "https://api.dicebear.com/8.x/thumbs/svg?seed=" + encodeURIComponent(uid);
+
+    try {
+        const db = await getDB();
+        const profile = await db.collection("users").findOne(
+            { uid },
+            { projection: { avatarUrl: 1, photoURL: 1 } }
+        );
+
+        // Support both field names — profile saves as photoURL, enrichment uses avatarUrl
+        const avatarUrl = profile?.avatarUrl || profile?.photoURL;
+
+        if (avatarUrl && typeof avatarUrl === "string" && avatarUrl.startsWith("http")) {
+            // Redirect to the stored URL — no caching so changes are instant
+            c.header("Cache-Control", "no-store, no-cache, must-revalidate");
+            c.header("Pragma", "no-cache");
+            return c.redirect(avatarUrl, 302);
+        }
+
+        // No avatar set — redirect to a deterministic avatar based on uid
+        c.header("Cache-Control", "no-store, no-cache, must-revalidate");
+        return c.redirect(FALLBACK, 302);
+    } catch {
+        return c.redirect(FALLBACK, 302);
+    }
+});
+
 // Get user profile by username (case-insensitive) - public for login
 userRouter.get("/profile/by-username/:username", async (c) => {
     const { username } = c.req.param();

@@ -31,11 +31,19 @@ commentsRouter.get("/anime/:animeId", async (c) => {
         .sort({ createdAt: -1 })
         .toArray();
     
-    // Convert _id to string for frontend compatibility
-    const formattedComments = comments.map(c => ({
-        ...c,
-        _id: c._id.toString()
-    }));
+    // Enrich with user profile (no duplication)
+    const uids = Array.from(new Set(comments.map((x: any) => x.userId).filter(Boolean)));
+    let profiles: Record<string, any> = {};
+    if (uids.length) {
+        const { getProfilesBatch } = await import("../helpers/profileCache.js");
+        profiles = await getProfilesBatch(db, uids);
+    }
+
+    const formattedComments = comments.map((cm: any) => {
+        const p = profiles[cm.userId] || null;
+        const fallback = { uid: cm.userId, username: cm.username ?? 'unknown', avatarUrl: cm.userAvatar ?? null, displayName: null };
+        return { ...cm, _id: cm._id.toString(), user: p ?? fallback };
+    });
     
     return c.json({ success: true, data: formattedComments });
 });
@@ -90,11 +98,19 @@ commentsRouter.get("/anime/:animeId/all", async (c) => {
         .sort({ createdAt: -1 })
         .toArray();
     
-    // Convert _id to string for frontend compatibility
-    const formattedComments = comments.map(c => ({
-        ...c,
-        _id: c._id.toString()
-    }));
+    // Enrich with user profile (no duplication)
+    const uids = Array.from(new Set(comments.map((x: any) => x.userId).filter(Boolean)));
+    let profiles: Record<string, any> = {};
+    if (uids.length) {
+        const { getProfilesBatch } = await import("../helpers/profileCache.js");
+        profiles = await getProfilesBatch(db, uids);
+    }
+
+    const formattedComments = comments.map((cm: any) => {
+        const p = profiles[cm.userId] || null;
+        const fallback = { uid: cm.userId, username: cm.username ?? 'unknown', avatarUrl: cm.userAvatar ?? null, displayName: null };
+        return { ...cm, _id: cm._id.toString(), user: p ?? fallback };
+    });
     
     return c.json({ success: true, data: formattedComments });
 });
