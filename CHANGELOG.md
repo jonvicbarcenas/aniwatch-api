@@ -1,3 +1,12 @@
+# [3.20.0](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.19.0...v3.20.0) (2026-02-27)
+
+
+### Features
+
+* add admin analytics API endpoints ([f20bbfb](https://github.com/ghoshRitesh12/aniwatch-api/commit/f20bbfb27597b20397a86ee33cb1b4e1dd83715f))
+
+
+
 # [3.19.0](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.18.0...v3.19.0) (2026-02-24)
 
 
@@ -31,15 +40,6 @@
 ### Bug Fixes
 
 * removed insecure auth fallback ([f871d56](https://github.com/ghoshRitesh12/aniwatch-api/commit/f871d56a70aa683f309da618affb748df54e9d18))
-
-
-
-# [3.16.0](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.15.1...v3.16.0) (2026-02-20)
-
-
-### Features
-
-* **chat:** add message reaction endpoint ([4887a4f](https://github.com/ghoshRitesh12/aniwatch-api/commit/4887a4fad3ecfc50d91269fed07f0add65c0537b))
 
 
 
