@@ -12,7 +12,7 @@ import { log } from "./logger.js";
  */
 
 // Default to localhost only in development, no wildcard for better security
-const DEFAULT_ALLOWED_ORIGINS = ["http://localhost:3000", "http://localhost:4000", "http://localhost:5173", "https://myronix.jvbarcenas.space", "https://myronix.strangled.net"];
+const DEFAULT_ALLOWED_ORIGINS = ["http://localhost:3000", "http://localhost:4000", "http://localhost:5173", "http://localhost:5174", "https://myronix.jvbarcenas.space", "https://myronix.strangled.net"];
 
 const allowedOrigins = env.ANIWATCH_API_CORS_ALLOWED_ORIGINS
     ? env.ANIWATCH_API_CORS_ALLOWED_ORIGINS.split(",").map(origin => origin.trim())
