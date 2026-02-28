@@ -1,3 +1,7 @@
+## [3.21.1](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.21.0...v3.21.1) (2026-02-28)
+
+
+
 # [3.21.0](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.20.0...v3.21.0) (2026-02-28)
 
 
@@ -31,15 +35,6 @@
 ### Features
 
 * centralized avatar endpoint and live profile enrichment for chat & comments ([b7a84cf](https://github.com/ghoshRitesh12/aniwatch-api/commit/b7a84cf0c7b157313034cc7f6a40eafbe0209fd5))
-
-
-
-# [3.17.0](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.16.1...v3.17.0) (2026-02-22)
-
-
-### Features
-
-* live profile enrichment for chat & comments ([57e5c51](https://github.com/ghoshRitesh12/aniwatch-api/commit/57e5c514bdae7ff812332cf9a10a6a660db04ce4))
 
 
 
