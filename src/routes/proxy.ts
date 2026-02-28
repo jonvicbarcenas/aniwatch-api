@@ -11,10 +11,10 @@ const CACHE_TTL_SEGMENT = 60 * 60 * 1000; // 1 hour for segments
 function getCached(url: string): string | Buffer | null {
     const cached = cache.get(url);
     if (!cached) return null;
-    
+
     const isM3U8 = url.endsWith(".m3u8");
     const ttl = isM3U8 ? CACHE_TTL_M3U8 : CACHE_TTL_SEGMENT;
-    
+
     if (Date.now() - cached.timestamp > ttl) {
         cache.delete(url);
         return null;
@@ -88,7 +88,7 @@ proxyRouter.get("/", async (c) => {
         if (cached) {
             const contentType = isM3U8 ? "application/vnd.apple.mpegurl" : "video/mp2t";
             const cacheControl = isM3U8 ? "public, max-age=600" : "public, max-age=31536000";
-            
+
             return c.body(cached as any, {
                 status: 200,
                 headers: {
