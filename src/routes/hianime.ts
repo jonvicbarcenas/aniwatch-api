@@ -225,18 +225,44 @@ hianimeRouter.get("/episode/sources", async (c) => {
     }
 
     // 2) Fallback to existing cache layer + upstream fetch
-    const data = await cache.getOrSet<HiAnime.ScrapedAnimeEpisodesSources>(
-        async () => hianime.getEpisodeSources(animeEpisodeId, server, category),
-        cacheConfig.key,
-        cacheConfig.duration
-    );
+    // Try the requested server first, then fall back to reliable servers if it fails
+    const fallbackServers: HiAnime.AnimeServers[] = [
+        HiAnime.Servers.VidStreaming, // hd-1
+        HiAnime.Servers.VidCloud,     // hd-2
+    ];
+
+    const serversToTry: HiAnime.AnimeServers[] = [
+        server,
+        // Add fallbacks only if they're not already the requested server
+        ...fallbackServers.filter(s => s !== server),
+    ];
+
+    let data: HiAnime.ScrapedAnimeEpisodesSources | null = null;
+    let usedServer = server;
+
+    for (const tryServer of serversToTry) {
+        try {
+            const result = await cache.getOrSet<HiAnime.ScrapedAnimeEpisodesSources>(
+                async () => hianime.getEpisodeSources(animeEpisodeId, tryServer, category),
+                tryServer === server ? cacheConfig.key : `${cacheConfig.key}_${tryServer}`,
+                cacheConfig.duration
+            );
+            if (result && Array.isArray((result as any).sources) && (result as any).sources.length > 0) {
+                data = result;
+                usedServer = tryServer;
+                break;
+            }
+        } catch {
+            // Try next server
+        }
+    }
 
     // 3) Store only on successful fetch (non-empty sources)
     try {
         if (data && Array.isArray((data as any).sources) && (data as any).sources.length > 0) {
             const db = await getDB();
             await ensureEpisodeSourcesCacheIndexes(db);
-            await setCachedEpisodeSources(db, animeEpisodeId, server, category, data);
+            await setCachedEpisodeSources(db, animeEpisodeId, usedServer, category, data);
         }
     } catch {
         // ignore DB write failures
