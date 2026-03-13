@@ -1,3 +1,12 @@
+## [3.21.2](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.21.1...v3.21.2) (2026-03-13)
+
+
+### Bug Fixes
+
+* fallback to hd-1/hd-2 in episode sources when requested server fails ([912bcff](https://github.com/ghoshRitesh12/aniwatch-api/commit/912bcff862341041540c444699cd56ca0c7e7cff))
+
+
+
 ## [3.21.1](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.21.0...v3.21.1) (2026-02-28)
 
 
@@ -26,15 +35,6 @@
 ### Features
 
 * add latest comments endpoint to comments router ([abebcd1](https://github.com/ghoshRitesh12/aniwatch-api/commit/abebcd19d683e2f1c0b42350614775de46d47e18))
-
-
-
-# [3.18.0](https://github.com/ghoshRitesh12/aniwatch-api/compare/v3.17.0...v3.18.0) (2026-02-24)
-
-
-### Features
-
-* centralized avatar endpoint and live profile enrichment for chat & comments ([b7a84cf](https://github.com/ghoshRitesh12/aniwatch-api/commit/b7a84cf0c7b157313034cc7f6a40eafbe0209fd5))
 
 
 
